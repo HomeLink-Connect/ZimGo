@@ -428,6 +428,9 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 .c2o img{left:0;bottom:0;width:100%;height:calc(100% - 62px);object-fit:contain;object-position:center bottom}
 .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px;font:700 12.5px Inter,sans-serif;color:var(--mut)}.rh button{border:0;background:none;color:var(--accX);font:800 13px Inter,sans-serif;cursor:pointer;padding:6px}
 [data-ri]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#sheet{will-change:transform}#sheet.min{transform:translateY(calc(100% - 84px))}#sheet.min>*{pointer-events:none}
+#sheet::after{content:"";position:absolute;left:0;right:0;top:0;height:30px}
+
 html{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
 body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
 
@@ -1988,5 +1991,21 @@ async function runSearch(v){const id=++_qs;$('#sres').innerHTML='<p class="m" st
  $('#sres').innerHTML=(note?`<p class="m" style="padding:6px 16px">${note}</p>`:'')+list.map((s,i)=>`<div class="rec" onclick="pickS(${i})">${IC_PIN}<div>${esc(s.name)}<small>${esc(s.sub)}</small></div></div>`).join('')
  +(sf==='ds'?`<div class="rec" onclick="chooseOnMap()">${IC_PIN}<div>Choose on map<small>${list.length?'Not it? Drop a pin anywhere':'Could not find “'+esc(v)+'”. Drop a pin exactly where you want'}</small></div></div>`:(list.length?'':'<p class="m" style="padding:14px">Try another spelling or a nearby landmark.</p>'))
  +(list.length||!sd?'':`<p class="m" style="padding:6px 16px;font-size:11px;opacity:.55">Search sources unavailable: ${esc(sd)}</p>`)}
+
+/* ============ bottom sheet: drag the handle down to peek at the map, up (or tap) to bring it back ============ */
+function sheetDrag(SH,env){const PEEK=84;let on=false,y0=0,off0=0,moved=0,t0=0,lastY=0,hTap=false;
+ const minOff=()=>Math.max(0,SH.offsetHeight-PEEK),isMin=()=>SH.classList.contains('min');
+ const start=y=>{const top=SH.getBoundingClientRect().top;if(y-top>(isMin()?PEEK:30))return false;on=true;y0=lastY=y;moved=0;t0=Date.now();off0=isMin()?minOff():0;hTap=isMin()||y-top<=26;SH.style.transition='none';return true};
+ const move=y=>{if(!on)return;moved=Math.max(moved,Math.abs(y-y0));lastY=y;SH.style.transform=`translateY(${Math.min(minOff(),Math.max(0,off0+y-y0))}px)`};
+ const end=()=>{if(!on)return;on=false;const dy=lastY-y0,o=Math.min(minOff(),Math.max(0,off0+dy));let col;
+  if(moved<8){if(!hTap){SH.style.transition='';SH.style.transform='';return}col=!isMin()}else{const v=dy/Math.max(1,Date.now()-t0);col=v>.35?true:v<-.35?false:o>minOff()/2}
+  SH.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';SH.style.transform='';SH.classList.toggle('min',col);setTimeout(()=>{SH.style.transition=''},320);env._d=Date.now()};
+ SH.addEventListener('touchstart',e=>{start(e.touches[0].clientY)},{passive:true});
+ SH.addEventListener('touchmove',e=>move(e.touches[0].clientY),{passive:true});
+ SH.addEventListener('touchend',end,{passive:true});SH.addEventListener('touchcancel',end,{passive:true});
+ SH.addEventListener('mousedown',e=>{if(start(e.clientY)){const m=ev=>move(ev.clientY),u=()=>{end();removeEventListener('mousemove',m);removeEventListener('mouseup',u)};addEventListener('mousemove',m);addEventListener('mouseup',u)}});
+ SH.addEventListener('click',e=>{if(Date.now()-(env._d||0)<500||isMin()){e.stopPropagation();e.preventDefault()}},true);
+ let sig='';new MutationObserver(()=>{const n=[typeof stage!=='undefined'?stage:'',typeof ride!=='undefined'&&ride?ride.id+ride.status:'',typeof rtype!=='undefined'?rtype:''].join('|');if(n!==sig){sig=n;SH.classList.remove('min')}}).observe(SH,{childList:true})}
+{const SH=document.getElementById('sheet');if(SH)sheetDrag(SH,window)}
 </script>
 </body></html>
