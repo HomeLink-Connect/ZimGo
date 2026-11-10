@@ -438,7 +438,7 @@ body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-be
 #pgr .mb{max-width:82%;padding:9px 12px;border-radius:16px;margin:4px 0;font-size:14.5px;line-height:1.35}#pgr .mb.me{align-self:flex-end;background:#2f7bff;color:#fff}#pgr .mb.ot{align-self:flex-start;background:rgba(128,128,128,.25)}#pgr .mt{font-size:10.5px;opacity:.7;margin-top:2px}
 html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
 
-.c2rr{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.c2rr::-webkit-scrollbar{display:none}.c2rr .chp{flex:none;white-space:nowrap}
+.c2rr{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;padding-bottom:4px;scrollbar-width:none}.c2rr::-webkit-scrollbar{display:none}.c2rr .chp{flex:none;white-space:nowrap}
 .c2p{background:var(--card,#16213e);border-radius:18px;padding:12px 14px;margin:8px 0}
 .c2h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.c2h span{color:var(--acc,#4da3ff);font-weight:800;font-size:13px}
 .c2d{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.c2d input{background:transparent;border:1px solid rgba(128,128,128,.4);border-radius:99px;color:inherit;padding:7px 12px;font:700 14px Inter,sans-serif}
@@ -1914,11 +1914,6 @@ const _om=openMenu;openMenu=function(){_om();const d=$('#drp .dl');if(d&&!d.quer
 /* city to city opens its own page (no ride screen, no old route) */
 function goC2C(){$('#dr').hidden=true;if(ride)return toast('Finish your current trip first.');rtype='c2c';c2cMode='car';if(stage!=='idle'||drop)backIdle();else idleView()}
 const _iv4=idleView;idleView=function(){_iv4();const s=$('#sheet');if(!s)return;if(rtype==='c2c'&&!ride){s.querySelectorAll('.sp').forEach(e=>e.remove());if(!$('#c2hd'))s.insertAdjacentHTML('afterbegin',`<div id="c2hd" class="c2hd"><button class="bk" onclick="setType('ride')">${ic('chevL',24)}</button><div><b>City to city</b><small>Travel between towns. Name your fare.</small></div><span class="c2gl">${ic('globe',26)}</span></div>`)}};
-/* loading feedback on every tap that does real work */
-{const b=document.createElement('div');b.id='ldb';document.body.appendChild(b);let n=0;window.ldb=on=>{n=Math.max(0,n+(on?1:-1));b.classList.toggle('on',n>0)};
- ['setDrop','doRoute','req','pickS','accept','goC2C','runSearch'].forEach(k=>{const o=window[k];if(typeof o!=='function')return;window[k]=function(){ldb(1);let r;try{r=o.apply(this,arguments)}catch(e){ldb(0);throw e}return Promise.resolve(r).finally(()=>ldb(0))}});
- document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('button,.rec,.c2o,.dli,.lr,.chp');if(t){t.classList.add('tap');setTimeout(()=>t.classList.remove('tap'),170)}},true)}
-
 /* ============ ROUND 3: auto city-to-city, 5-day chats, wider search ============ */
 /* long trips switch to City to city automatically */
 const _dr2=doRoute;doRoute=async function(){await _dr2.apply(this,arguments);if(rt&&rt.km>=40&&rtype!=='c2c'&&stage==='route'&&drop&&!ride){rtype='c2c';c2cMode='car';const sug=Math.max(5,Math.round((3+.6*rt.km)*2)/2);price=sug;window.SUG=sug;toast('Long trip, so we switched to City to city');routeView()}};
@@ -1947,11 +1942,51 @@ function chatThread(i){const x=_cl[i];if(!x)return;if(ride&&chatOK(ride)&&peerOf
    pgSet(esc(x.p.name),`<div class="card"><div class="of">${avt(x.p.photo,x.p.name,46)}<div class="t"><b>${esc(x.p.name)}</b><span class="m" style="margin:0">${esc(x.p.sub)}</span></div>${x.p.phone?`<a class="btn d" style="width:auto;padding:10px 14px" href="tel:${esc(x.p.phone)}">${ic('phone',18)}</a>`:''}</div></div><div style="display:flex;flex-direction:column;padding:6px 0">${a.map(m=>m.type==='call'?`<div class="mcl">${ic('phone',14)} ${esc(m.t)}</div>`:`<div class="mb ${m.from===me.uid?'me':'ot'}">${esc(m.t)}<div class="mt">${fmtT(m)}</div></div>`).join('')}</div><p class="m" style="padding:6px 4px">Messages are removed after 5 days. Chat reopens when this driver accepts a ride.</p>`)}).catch(()=>pgSet(esc(x.p.name),'<p class="m" style="padding:14px">Could not load this chat.</p>'))})}
 
 /* ============ keep the app fixed: nothing can drag the page away ============ */
-{const sc=el=>{while(el&&el!==document.body&&el.nodeType===1){const o=getComputedStyle(el).overflowY;if((o==='auto'||o==='scroll')&&el.scrollHeight>el.clientHeight+1)return el;el=el.parentElement}return null};
- let y0=0;document.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});
- document.addEventListener('touchmove',e=>{if(e.touches.length>1)return;const el=sc(e.target);if(!el){e.preventDefault();return}
-  const dy=e.touches[0].clientY-y0;if((dy>0&&el.scrollTop<=0)||(dy<0&&el.scrollTop+el.clientHeight>=el.scrollHeight-1))e.preventDefault()},{passive:false});
+{const sc=(el,h)=>{while(el&&el!==document.body&&el.nodeType===1){const cs=getComputedStyle(el),o=h?cs.overflowX:cs.overflowY;if((o==='auto'||o==='scroll')&&(h?el.scrollWidth>el.clientWidth+1:el.scrollHeight>el.clientHeight+1))return el;el=el.parentElement}return null};
+ let x0=0,y0=0;document.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+ document.addEventListener('touchmove',e=>{if(e.touches.length>1)return;const dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+  if(Math.abs(dx)>Math.abs(dy)){if(!sc(e.target,true))e.preventDefault();return}
+  const el=sc(e.target,false);if(!el){e.preventDefault();return}
+  if((dy>0&&el.scrollTop<=0)||(dy<0&&el.scrollTop+el.clientHeight>=el.scrollHeight-1))e.preventDefault()},{passive:false});
  const home=()=>{if(scrollX||scrollY)scrollTo(0,0)};addEventListener('scroll',home,{passive:true});addEventListener('orientationchange',()=>setTimeout(home,200));
  if(window.visualViewport)visualViewport.addEventListener('resize',()=>setTimeout(home,50))}
+
+/* ============ SEARCH v2: every source answers on its own; one failing never hides the rest ============ */
+const ZWB={north:-15.55,south:-22.5,east:33.1,west:25.15};
+window._sd={};
+const _P=(n,f)=>Promise.race([Promise.resolve().then(f).then(r=>{_sd[n]=r.length;return r}),new Promise(r=>setTimeout(()=>{_sd[n]='timeout';r([])},6500))]).catch(e=>{_sd[n]=String((e&&e.message)||e).slice(0,50);return[]});
+const _gm=(p,a)=>{const x=(a||'').split(',');return{lat:p.lat,lng:p.lng,name:p.name||x[0],sub:x.slice(0,3).join(',').trim()}};
+async function s_new(v,c,zw){if(EMB||!window.google)throw new Error('maps js off');const{AutocompleteSuggestion,AutocompleteSessionToken}=await google.maps.importLibrary('places');stok=stok||new AutocompleteSessionToken();
+ const q={input:v,sessionToken:stok,origin:c,includedRegionCodes:['zw']};if(zw)q.locationRestriction=ZWB;else q.locationBias={center:c,radius:50000};
+ const{suggestions}=await AutocompleteSuggestion.fetchAutocompleteSuggestions(q);
+ return suggestions.filter(x=>x.placePrediction).map(x=>{const p=x.placePrediction;return{gp:p,name:p.mainText?.text||p.text.text,sub:p.secondaryText?.text||''}})}
+async function s_text(v,c,zw){if(EMB||!window.google)throw new Error('maps js off');const{Place}=await google.maps.importLibrary('places');
+ const q={textQuery:v,fields:['displayName','location','formattedAddress'],maxResultCount:10,region:'zw'};if(zw)q.locationRestriction=ZWB;else q.locationBias={center:c,radius:50000};
+ const{places}=await Place.searchByText(q);return(places||[]).map(p=>_gm({lat:p.location.lat(),lng:p.location.lng(),name:p.displayName},p.formattedAddress))}
+async function s_legacy(v,c,zw){if(EMB||!window.google)throw new Error('maps js off');await google.maps.importLibrary('places');
+ return new Promise((res,rej)=>{const svc=new google.maps.places.PlacesService(document.createElement('div'));const q=zw?{query:v+' Zimbabwe',region:'zw'}:{query:v,location:c,radius:50000,region:'zw'};
+  svc.textSearch(q,(r,st)=>{if(st==='OK')res(r.slice(0,10).map(p=>_gm({lat:p.geometry.location.lat(),lng:p.geometry.location.lng(),name:p.name},p.formatted_address)));else if(st==='ZERO_RESULTS')res([]);else rej(new Error('legacy '+st))})})}
+async function s_rest(v,c,zw){const b={textQuery:v,regionCode:'ZW',maxResultCount:10};
+ if(zw)b.locationRestriction={rectangle:{low:{latitude:ZWB.south,longitude:ZWB.west},high:{latitude:ZWB.north,longitude:ZWB.east}}};else b.locationBias={circle:{center:{latitude:c.lat,longitude:c.lng},radius:50000}};
+ const j=await(await fetch('https://places.googleapis.com/v1/places:searchText',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GMAPS_KEY,'X-Goog-FieldMask':'places.displayName,places.formattedAddress,places.location'},body:JSON.stringify(b)})).json();
+ if(j.error)throw new Error(j.error.status||j.error.message);return(j.places||[]).map(p=>_gm({lat:p.location.latitude,lng:p.location.longitude,name:p.displayName&&p.displayName.text},p.formattedAddress))}
+async function s_geo(v){const j=await(await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(v)}&components=country:ZW&key=${GMAPS_KEY}`)).json();
+ if(j.status&&!['OK','ZERO_RESULTS'].includes(j.status))throw new Error(j.status);return(j.results||[]).slice(0,5).map(x=>_gm({lat:x.geometry.location.lat,lng:x.geometry.location.lng},x.formatted_address))}
+async function s_osm(v){const j=await(await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&countrycodes=zw&q=${encodeURIComponent(v)}`)).json();return j.map(x=>{const a=x.display_name.split(',');return{lat:+x.lat,lng:+x.lon,name:a[0],sub:a.slice(1,4).join(',').trim()}})}
+async function s_photon(v,c){const j=await(await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(v)}&limit=10&lat=${c.lat}&lon=${c.lng}&bbox=25.1,-22.6,33.2,-15.4`)).json();
+ return(j.features||[]).map(f=>{const p=f.properties,g=f.geometry.coordinates;return{lat:g[1],lng:g[0],name:p.name||p.street||p.city||p.state||'',sub:[p.name&&p.street?p.street:'',p.suburb||p.district,p.city||p.county,p.country].filter(Boolean).join(', ')}}).filter(x=>x.name)}
+async function searchAll(v){const c=_ctr();_sd={};
+ const L=await Promise.all([_P('places',()=>s_new(v,c,0)),_P('placesZW',()=>s_new(v,c,1)),_P('text',()=>s_text(v,c,0)),_P('textZW',()=>s_text(v,c,1)),_P('legacy',()=>s_legacy(v,c,0)),_P('legacyZW',()=>s_legacy(v,c,1)),
+  _P('rest',()=>s_rest(v,c,0)),_P('restZW',()=>s_rest(v,c,1)),_P('geocode',()=>s_geo(v)),_P('osm',()=>s_osm(v)),_P('photon',()=>s_photon(v,c))]),out=[],seen=new Set();
+ for(let i=0;out.length<14&&L.some(a=>i<a.length);i++)for(const a of L){const x=a[i];if(!x||out.length>=14)continue;const k=(x.name+'|'+(x.sub||'').split(',')[0]).toLowerCase();if(seen.has(k))continue;seen.add(k);out.push(x)}
+ try{console.log('search',v,_sd)}catch(e){}return out}
+async function runSearch(v){const id=++_qs;$('#sres').innerHTML='<p class="m" style="padding:14px">Searching…</p>';
+ const w=v.split(/\s+/).filter(Boolean),tries=[v];for(let k=1;k<w.length;k++)tries.push(w.slice(0,w.length-k).join(' '));w.filter(x=>x.length>=4).sort((a,b)=>b.length-a.length).forEach(x=>{if(!tries.includes(x))tries.push(x)});
+ let list=[],note='',used=v;
+ for(const q of tries.slice(0,5)){if(id!==_qs)return;list=await searchAll(q);if(list.length){used=q;if(q!==v)note=`Closest matches for “${esc(q)}”`;break}}
+ if(id!==_qs)return;sres=list;const sd=Object.entries(_sd).filter(([k,x])=>typeof x==='string').map(([k,x])=>k+': '+x).join(' · ');
+ $('#sres').innerHTML=(note?`<p class="m" style="padding:6px 16px">${note}</p>`:'')+list.map((s,i)=>`<div class="rec" onclick="pickS(${i})">${IC_PIN}<div>${esc(s.name)}<small>${esc(s.sub)}</small></div></div>`).join('')
+ +(sf==='ds'?`<div class="rec" onclick="chooseOnMap()">${IC_PIN}<div>Choose on map<small>${list.length?'Not it? Drop a pin anywhere':'Could not find “'+esc(v)+'”. Drop a pin exactly where you want'}</small></div></div>`:(list.length?'':'<p class="m" style="padding:14px">Try another spelling or a nearby landmark.</p>'))
+ +(list.length||!sd?'':`<p class="m" style="padding:6px 16px;font-size:11px;opacity:.55">Search sources unavailable: ${esc(sd)}</p>`)}
 </script>
 </body></html>
