@@ -428,12 +428,21 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 .c2o img{left:0;bottom:0;width:100%;height:calc(100% - 62px);object-fit:contain;object-position:center bottom}
 .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px;font:700 12.5px Inter,sans-serif;color:var(--mut)}.rh button{border:0;background:none;color:var(--accX);font:800 13px Inter,sans-serif;cursor:pointer;padding:6px}
 [data-ri]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-#m3d{position:absolute;inset:0;z-index:450;background:#0b1730}#m3d[hidden]{display:none}#m3m{position:absolute;inset:0}
-#m3s{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);display:grid;grid-template-columns:repeat(2,50px);gap:8px;z-index:2}
-.m3b{width:50px;height:50px;border-radius:16px;background:var(--fab);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);color:var(--tx);font:800 15px Inter,sans-serif;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
-.m3b:active{transform:scale(.92)}.m3b .i{width:24px;height:24px}.m3b.on{background:var(--acc);color:#fff}.m3b.on .i{fill:#fff}
-#m3c{position:absolute;left:14px;top:calc(env(safe-area-inset-top,0px) + 76px);z-index:2}
-.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{z-index:1}.maplibregl-ctrl-attrib{font-size:9px}
+
+/* logo: the white/blue Go badge now lines up with the letters of Z-i-m (cap height, equal space above and below) */
+.logo{line-height:1.1}
+.logo span{display:inline-block;height:.87em;line-height:.87em;padding:0 .2em;border-radius:.26em;margin-left:.07em;vertical-align:baseline}
+.vm{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}.vm.on{background:rgba(255,80,80,.28);animation:vmp 1s infinite}@keyframes vmp{50%{transform:scale(1.12)}}
+.pp{text-align:center;padding:18px 14px;border-radius:22px;background:linear-gradient(160deg,var(--acc),#7a4dff);color:#fff;margin-bottom:14px}.pp .ppl{font-size:44px;line-height:1}.pp b{display:block;font-size:22px;margin-top:6px}.pp small{opacity:.9;font-weight:700}
+.ppb{height:8px;border-radius:9px;background:rgba(255,255,255,.3);margin-top:12px;overflow:hidden}.ppb i{display:block;height:100%;background:#fff;border-radius:9px}
+.stg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stp{border:2px dashed rgba(128,128,128,.5);border-radius:18px;padding:10px 4px;text-align:center;opacity:.65}.stp.on{border:2px solid var(--acc);opacity:1;transform:rotate(-2deg)}.stp.on:nth-child(even){transform:rotate(2deg)}
+.stp span{display:flex;width:44px;height:44px;margin:0 auto 6px;border-radius:50%;border:2px solid currentColor;align-items:center;justify-content:center;font-weight:800;font-size:18px}.stp.on span{background:var(--acc);color:#fff;border-color:var(--acc)}
+.stp b{display:block;font-size:13px}.stp small{font-size:11px;opacity:.75;font-weight:700}
+
+#zmi{display:flex;flex-direction:column;gap:10px}#zmi[hidden]{display:none}#zm #zmt.on{background:var(--acc)}#zm #zmt.on .i{stroke:#fff}
+
+
 
 #zm{position:absolute;left:14px;bottom:240px;z-index:500;display:flex;flex-direction:column;gap:10px}
 #zm button{width:52px;height:52px;border-radius:50%;background:var(--fab);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
@@ -470,13 +479,13 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
 <button id="menu" hidden onclick="openMenu()">☰</button>
 <div id="top" hidden></div>
 <div id="pin" hidden><div class="lbl"><small id="pl">Pickup point</small><b id="pn">…</b></div><div class="ic" id="pic"></div><div class="st"></div></div>
-<div id="zm" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button><button type="button" id="m3e" aria-label="3D view" onclick="open3D()" style="font:800 16px Inter,sans-serif;color:var(--tx)">3D</button></div>
+<div id="zm" hidden><div id="zmi" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button></div><button type="button" id="zmt" aria-label="Map tools" onclick="zmToggle()"><svg class="i" viewBox="0 0 24 24" style="fill:none;stroke:var(--tx);stroke-width:2;stroke-linecap:round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg></button>
 <button id="loc" hidden onclick="locate()"><svg class="i" viewBox="0 0 24 24" fill="#fff"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
 <div id="sheet"></div>
 <div id="srch" hidden>
  <div class="hd"><button onclick="closeSearch()">←</button><h3>Your route</h3></div>
  <div class="f"><span class="dotb"></span><input id="spk" placeholder="Pickup location" oninput="query(this.value,'pk')" onfocus="sf='pk'"></div>
- <div class="f"><span class="dotl"></span><input id="sds" placeholder="Where to?" autocomplete="off" oninput="query(this.value,'ds')" onfocus="sf='ds'"></div>
+ <div class="f"><span class="dotl"></span><input id="sds" placeholder="Where to?" autocomplete="off" oninput="query(this.value,'ds')" onfocus="sf='ds'"><button type="button" id="vmic" class="vm" aria-label="Say where to" onclick="voiceDest()"><svg class="i" viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V22h2v-3.1A7 7 0 0 0 19 12z"/></svg></button></div>
  <div class="mapbtn" onclick="chooseOnMap()"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 21s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>Choose on map</div>
  <div id="sres"></div>
 </div>
@@ -2021,7 +2030,7 @@ function sheetDrag(SH,env){const PEEK=84;let on=false,y0=0,off0=0,moved=0,t0=0,l
 {const SH=document.getElementById('sheet');if(SH)sheetDrag(SH,window)}
 
 /* ============ one-finger zoom: buttons, double-tap, and double-tap-then-drag ============ */
-function zoomBy(d){if(typeof m3!=='undefined'&&m3&&!$('#m3d').hidden){m3.easeTo({zoom:m3.getZoom()+d,duration:250});return}if(EMB){emb.z=Math.max(3,Math.min(20,(emb.z||16)+d));const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z}${emb.t?'&t='+emb.t:''}&output=embed`);return}
+function zoomBy(d){if(EMB){emb.z=Math.max(3,Math.min(20,(emb.z||16)+d));const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z}${emb.t?'&t='+emb.t:''}&output=embed`);return}
  if(map&&map.getZoom)map.setZoom(Math.max(3,Math.min(20,Math.round(map.getZoom())+d)))}
 {const z=document.getElementById('zm'),sh=document.getElementById('sheet'),lc=document.getElementById('loc');
  const place=()=>{if(!z)return;z.hidden=!!(lc&&lc.hidden);const t=sh?sh.getBoundingClientRect().top:innerHeight*.6;z.style.bottom=Math.max(14,innerHeight-t+14)+'px'};
@@ -2036,41 +2045,29 @@ function zoomBy(d){if(typeof m3!=='undefined'&&m3&&!$('#m3d').hidden){m3.easeTo(
 function zgDark(){try{const h=(getComputedStyle(document.documentElement).getPropertyValue('--bg0')||'#000').trim().replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return(((n>>16)&255)*.3+((n>>8)&255)*.59+(n&255)*.11)<110}catch(e){return false}}
 function applyLayer(hy){const b=document.getElementById('ml');b&&b.classList.toggle('on',!!hy);
  if(EMB){emb.t=hy?'h':'';const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z||16}${emb.t?'&t='+emb.t:''}&output=embed`);return}
- if(!map||!map.setMapTypeId)return;map.setMapTypeId(hy?'hybrid':'roadmap');try{map.setTilt(hy&&map.getZoom()>=17?45:0)}catch(e){}}
+ if(!map||!map.setMapTypeId)return;map.setMapTypeId(hy?'hybrid':'roadmap')}
 function mapLayer(){const hy=localStorage.zg_hy==='1'?0:1;try{localStorage.zg_hy=hy?'1':'0'}catch(e){}applyLayer(hy);toast(hy?'Satellite view':'Map view')}
-mapReady.then(()=>{if(localStorage.zg_hy==='1')applyLayer(1);if(map&&map.addListener)map.addListener('zoom_changed',()=>{try{if(map.getMapTypeId()==='hybrid')map.setTilt(map.getZoom()>=17?45:0)}catch(e){}})});
+mapReady.then(()=>{if(localStorage.zg_hy==='1')applyLayer(1)});
 
-/* ============ 3D VIEW: tilted, rotatable satellite map with real terrain and 3D buildings (keyless) ============ */
-let m3=null,m3load=null,m3sat=true,m3mk=[];
-document.body.insertAdjacentHTML('beforeend',`<div id="m3d" hidden><div id="m3m"></div>
-<button id="m3c" class="m3b" aria-label="Reset view" onclick="m3&&m3.easeTo({bearing:0,pitch:62})"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l5 7H7zM12 21l-5-7h10z"/></svg></button>
-<div id="m3s"><button class="m3b" id="m3t" aria-label="2D or 3D" onclick="m3pitch()">2D</button>
-<button class="m3b" aria-label="Satellite or map" onclick="m3layer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button>
-<button class="m3b" aria-label="Rotate left" onclick="m3rot(-30)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-<button class="m3b" aria-label="Rotate right" onclick="m3rot(30)"><svg class="i" viewBox="0 0 24 24" style="transform:scaleX(-1)"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
-<button class="m3b" aria-label="Tilt more" onclick="m3tilt(10)"><svg class="i" viewBox="0 0 24 24"><path d="M12 7l7 9H5z"/></svg></button>
-<button class="m3b" aria-label="Tilt less" onclick="m3tilt(-10)"><svg class="i" viewBox="0 0 24 24"><path d="M12 17L5 8h14z"/></svg></button>
-<button class="m3b" aria-label="My pickup" onclick="here&&m3.easeTo({center:[here.lng,here.lat]})"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
-<button class="m3b" aria-label="Close 3D" onclick="close3D()"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button></div></div>`);
-const M3SAT={version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Esri, Maxar, Earthstar Geographics'},lab:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19},dem:{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:14}},layers:[{id:'sat',type:'raster',source:'sat'},{id:'lab',type:'raster',source:'lab'}],terrain:{source:'dem',exaggeration:1.4}};
-const m3style=()=>m3sat?M3SAT:'https://tiles.openfreemap.org/styles/liberty';
-const ml3load=()=>m3load||(m3load=new Promise((res,rej)=>{const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css';document.head.appendChild(l);const e=document.createElement('script');e.src='https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';e.onload=res;e.onerror=()=>{m3load=null;rej(new Error('load'))};document.head.appendChild(e)}));
-function m3draw(){if(!m3)return;let pts=[];try{pts=poly&&poly.getPath?poly.getPath().getArray().map(p=>[p.lng(),p.lat()]):[]}catch(e){}
- try{if(m3.getLayer('m3rc'))m3.removeLayer('m3rc');if(m3.getSource('m3r'))m3.removeSource('m3r');
-  if(pts.length>1){m3.addSource('m3r',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:pts}}});m3.addLayer({id:'m3rc',type:'line',source:'m3r',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#3b8cff','line-width':6,'line-opacity':.95}})}}catch(e){}}
-function m3pins(){m3mk.forEach(x=>x.remove());m3mk=[];const mk=(ll,c,i)=>{if(!ll||ll.lat==null)return;const d=document.createElement('div');d.innerHTML=_pn(c,i);d.style.cssText='width:44px;height:58px';m3mk.push(new maplibregl.Marker({element:d,anchor:'bottom'}).setLngLat([ll.lng,ll.lat]).addTo(m3))};
- mk(here,'#2f7bff','<circle cx="22" cy="20" r="7.5" fill="#fff"/><circle cx="22" cy="20" r="3.4" fill="#2f7bff"/>');mk(drop,'#ff4d4f','<rect x="16.5" y="14.5" width="11" height="11" rx="2.6" fill="#fff"/>')}
-async function open3D(){
- if(window.ZG_MAP_ID&&!EMB&&map&&map.setTilt){const t=map.getTilt?map.getTilt():0;map.setTilt(t>10?0:60);if(t<=10)map.setHeading(map.getHeading()||-20);return}
- const el=document.getElementById('m3d');el.hidden=false;const pn=document.getElementById('pin');pn&&(pn.style.visibility='hidden');
- try{await ml3load()}catch(e){close3D();return toast('3D view needs an internet connection.')}
- const c=map&&map.getCenter?map.getCenter():null,ll=c?{lat:c.lat(),lng:c.lng()}:(here||{lat:-17.83,lng:31.05}),gz=(map&&map.getZoom?map.getZoom():16),z=Math.min(18,Math.max(14,gz-1));
- if(!m3){m3=new maplibregl.Map({container:'m3m',style:m3style(),center:[ll.lng,ll.lat],zoom:z,pitch:62,bearing:-20,maxPitch:80,attributionControl:{compact:true}});m3.on('style.load',m3draw)}
- else{m3.jumpTo({center:[ll.lng,ll.lat],zoom:z,pitch:62,bearing:-20});m3.resize();m3draw()}
- m3pins();document.getElementById('m3t').textContent='2D'}
-function close3D(){const el=document.getElementById('m3d');el.hidden=true;const pn=document.getElementById('pin');pn&&(pn.style.visibility='')}
-function m3pitch(){if(!m3)return;const up=m3.getPitch()>10;m3.easeTo({pitch:up?0:62,bearing:up?0:m3.getBearing(),duration:600});document.getElementById('m3t').textContent=up?'3D':'2D'}
-function m3layer(){if(!m3)return;m3sat=!m3sat;m3.setStyle(m3style());toast(m3sat?'Satellite':'Map with 3D buildings')}
-const m3rot=d=>m3&&m3.easeTo({bearing:m3.getBearing()+d,duration:300}),m3tilt=d=>m3&&m3.easeTo({pitch:Math.max(0,Math.min(80,m3.getPitch()+d)),duration:250});
+function zmToggle(){const b=document.getElementById('zmi');b.hidden=!b.hidden;document.getElementById('zmt').classList.toggle('on',!b.hidden)}
+
+/* ============ ONLY ON ZIMGO: Passport, ride vibes, voice destination, Shona greetings ============ */
+ZG_TAGS.push(['sungura','🎸','Sungura'],['zimdance','🎤','Zimdancehall'],['gospel','🙏','Gospel'],['amapiano','🎹','Amapiano'],['chat','💬','Happy to chat']);
+const PASS=[['Harare',-17.8292,31.0522],['Bulawayo',-20.1325,28.6265],['Mutare',-18.9707,32.6709],['Gweru',-19.45,29.8167],['Masvingo',-20.0744,30.8328],['Victoria Falls',-17.9243,25.8572],['Kariba',-16.5167,28.8],['Chinhoyi',-17.3667,30.2],['Bindura',-17.3019,31.3306],['Kwekwe',-18.9281,29.8149],['Marondera',-18.1853,31.5519],['Beitbridge',-22.2167,30],['Kadoma',-18.3333,29.9167],['Rusape',-18.5333,32.1333],['Chiredzi',-21.05,31.6667],['Hwange',-18.3667,26.5],['Karoi',-16.8167,29.6833],['Chipinge',-20.1883,32.6236],['Nyanga',-18.2167,32.75],['Zvishavane',-20.3333,30.0333],['Plumtree',-20.4833,27.8167],['Gokwe',-18.2167,28.9333]];
+const kmB=(a,b,c,d)=>{const r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 12742*Math.asin(Math.sqrt(h))};
+function passCalc(d){const seen=new Map();d.forEach(r=>[r.drop,r.pickup].forEach(p=>{if(!p||p.lat==null)return;PASS.forEach(c=>{if(kmB(+p.lat,+p.lng,c[1],c[2])<22)seen.set(c[0],(seen.get(c[0])||0)+1)})}));
+ const n=d.length,km=d.reduce((a,r)=>a+(+r.km||0),0),lv=n>=25?['Zim Legend','🏆']:n>=10?['Road Explorer','🧭']:n>=3?['Road Regular','🚗']:['New Traveller','🌱'];return{seen,n,km,lv}}
+async function pgPass(){pgSet('ZimGo Passport','<p class="m" style="padding:14px">Loading…</p>');
+ try{const s=await R_.where('pax','==',me.uid).get(),d=s.docs.map(x=>x.data()).filter(r=>r.status==='done'),P=passCalc(d);window._pp=P;
+  pgSet('ZimGo Passport',`<div class="pp"><div class="ppl">${P.lv[1]}</div><b>${P.lv[0]}</b><small>${P.n} trip${P.n==1?'':'s'} · ${Math.round(P.km)} km · ${P.seen.size}/${PASS.length} towns</small><div class="ppb"><i style="width:${P.seen.size/PASS.length*100}%"></i></div></div>
+  <div class="stg">${PASS.map(c=>{const k=P.seen.get(c[0]);return`<div class="stp ${k?'on':''}"><span>${k?'✓':c[0][0]}</span><b>${c[0]}</b><small>${k?k+' trip'+(k>1?'s':''):'Not yet'}</small></div>`}).join('')}</div>
+  <button class="btn" onclick="passShare()">${ic('share',18)} Share my passport</button><p class="m" style="padding:10px 4px">Ride to a town to earn its stamp. Every completed trip counts.</p>`)}catch(e){pgSet('ZimGo Passport','<p class="m" style="padding:14px">Could not load your passport.</p>')}}
+function passShare(){const P=window._pp;if(!P)return;const t=`🇿🇼 My ZimGo Passport\n${P.lv[1]} ${P.lv[0]} · ${P.n} trips · ${Math.round(P.km)} km\nTowns stamped (${P.seen.size}/${PASS.length}): ${[...P.seen.keys()].join(', ')||'none yet'}\nName your fare. Ride anywhere. Join me on ZimGo!`;window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
+const _om3=openMenu;openMenu=function(){_om3();const d=$('#drp .dl');if(d&&me.role!=='driver'&&!d.querySelector('[data-pass]')){const a=d.querySelector('[data-msg]')||d.children[1];a&&a.insertAdjacentHTML('afterend',dli('globe','ZimGo Passport',"PGS.length=0;pgOpen(pgPass)").replace('<div ','<div data-pass '))}};
+/* say where you want to go */
+function voiceDest(){const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R)return toast('Voice search is not supported on this phone.');const b=document.getElementById('vmic'),r=new R();r.lang='en-GB';r.interimResults=false;r.maxAlternatives=1;b.classList.add('on');
+ r.onresult=e=>{const t=e.results[0][0].transcript.replace(/^(please )?(take me to|go to|i want to go to|to)\s+/i,'').trim();const i=document.getElementById('sds');i.value=t;sf='ds';query(t,'ds')};r.onerror=()=>toast('Could not hear you. Try again.');r.onend=()=>b.classList.remove('on');try{r.start()}catch(e){b.classList.remove('on')}}
+/* Shona greeting, once a day */
+{const t=setInterval(()=>{if(typeof me!=='undefined'&&me&&me.uid){clearInterval(t);const k='zg_gr'+new Date().toDateString();if(!localStorage[k]){localStorage[k]=1;const h=new Date().getHours(),g=h<12?['Mangwanani','Good morning']:h<17?['Masikati','Good afternoon']:['Manheru','Good evening'];toast(`${g[0]}, ${esc((me.name||'').split(' ')[0])}! ${g[1]} 👋`)}}},1500)}
 </script>
 </body></html>
