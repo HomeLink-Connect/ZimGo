@@ -428,6 +428,13 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 .c2o img{left:0;bottom:0;width:100%;height:calc(100% - 62px);object-fit:contain;object-position:center bottom}
 .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px;font:700 12.5px Inter,sans-serif;color:var(--mut)}.rh button{border:0;background:none;color:var(--accX);font:800 13px Inter,sans-serif;cursor:pointer;padding:6px}
 [data-ri]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#m3d{position:absolute;inset:0;z-index:450;background:#0b1730}#m3d[hidden]{display:none}#m3m{position:absolute;inset:0}
+#m3s{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);display:grid;grid-template-columns:repeat(2,50px);gap:8px;z-index:2}
+.m3b{width:50px;height:50px;border-radius:16px;background:var(--fab);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);color:var(--tx);font:800 15px Inter,sans-serif;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
+.m3b:active{transform:scale(.92)}.m3b .i{width:24px;height:24px}.m3b.on{background:var(--acc);color:#fff}.m3b.on .i{fill:#fff}
+#m3c{position:absolute;left:14px;top:calc(env(safe-area-inset-top,0px) + 76px);z-index:2}
+.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{z-index:1}.maplibregl-ctrl-attrib{font-size:9px}
+
 #zm{position:absolute;left:14px;bottom:240px;z-index:500;display:flex;flex-direction:column;gap:10px}
 #zm button{width:52px;height:52px;border-radius:50%;background:var(--fab);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
 #zm button:active{transform:scale(.92)}#zm .i{width:26px;height:26px}#zm button.on{background:var(--acc)}#zm button.on .i{fill:#fff}
@@ -463,7 +470,7 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
 <button id="menu" hidden onclick="openMenu()">☰</button>
 <div id="top" hidden></div>
 <div id="pin" hidden><div class="lbl"><small id="pl">Pickup point</small><b id="pn">…</b></div><div class="ic" id="pic"></div><div class="st"></div></div>
-<div id="zm" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button></div>
+<div id="zm" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button><button type="button" id="m3e" aria-label="3D view" onclick="open3D()" style="font:800 16px Inter,sans-serif;color:var(--tx)">3D</button></div>
 <button id="loc" hidden onclick="locate()"><svg class="i" viewBox="0 0 24 24" fill="#fff"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
 <div id="sheet"></div>
 <div id="srch" hidden>
@@ -2014,7 +2021,7 @@ function sheetDrag(SH,env){const PEEK=84;let on=false,y0=0,off0=0,moved=0,t0=0,l
 {const SH=document.getElementById('sheet');if(SH)sheetDrag(SH,window)}
 
 /* ============ one-finger zoom: buttons, double-tap, and double-tap-then-drag ============ */
-function zoomBy(d){if(EMB){emb.z=Math.max(3,Math.min(20,(emb.z||16)+d));const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z}${emb.t?'&t='+emb.t:''}&output=embed`);return}
+function zoomBy(d){if(typeof m3!=='undefined'&&m3&&!$('#m3d').hidden){m3.easeTo({zoom:m3.getZoom()+d,duration:250});return}if(EMB){emb.z=Math.max(3,Math.min(20,(emb.z||16)+d));const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z}${emb.t?'&t='+emb.t:''}&output=embed`);return}
  if(map&&map.getZoom)map.setZoom(Math.max(3,Math.min(20,Math.round(map.getZoom())+d)))}
 {const z=document.getElementById('zm'),sh=document.getElementById('sheet'),lc=document.getElementById('loc');
  const place=()=>{if(!z)return;z.hidden=!!(lc&&lc.hidden);const t=sh?sh.getBoundingClientRect().top:innerHeight*.6;z.style.bottom=Math.max(14,innerHeight-t+14)+'px'};
@@ -2032,5 +2039,38 @@ function applyLayer(hy){const b=document.getElementById('ml');b&&b.classList.tog
  if(!map||!map.setMapTypeId)return;map.setMapTypeId(hy?'hybrid':'roadmap');try{map.setTilt(hy&&map.getZoom()>=17?45:0)}catch(e){}}
 function mapLayer(){const hy=localStorage.zg_hy==='1'?0:1;try{localStorage.zg_hy=hy?'1':'0'}catch(e){}applyLayer(hy);toast(hy?'Satellite view':'Map view')}
 mapReady.then(()=>{if(localStorage.zg_hy==='1')applyLayer(1);if(map&&map.addListener)map.addListener('zoom_changed',()=>{try{if(map.getMapTypeId()==='hybrid')map.setTilt(map.getZoom()>=17?45:0)}catch(e){}})});
+
+/* ============ 3D VIEW: tilted, rotatable satellite map with real terrain and 3D buildings (keyless) ============ */
+let m3=null,m3load=null,m3sat=true,m3mk=[];
+document.body.insertAdjacentHTML('beforeend',`<div id="m3d" hidden><div id="m3m"></div>
+<button id="m3c" class="m3b" aria-label="Reset view" onclick="m3&&m3.easeTo({bearing:0,pitch:62})"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l5 7H7zM12 21l-5-7h10z"/></svg></button>
+<div id="m3s"><button class="m3b" id="m3t" aria-label="2D or 3D" onclick="m3pitch()">2D</button>
+<button class="m3b" aria-label="Satellite or map" onclick="m3layer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button>
+<button class="m3b" aria-label="Rotate left" onclick="m3rot(-30)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
+<button class="m3b" aria-label="Rotate right" onclick="m3rot(30)"><svg class="i" viewBox="0 0 24 24" style="transform:scaleX(-1)"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
+<button class="m3b" aria-label="Tilt more" onclick="m3tilt(10)"><svg class="i" viewBox="0 0 24 24"><path d="M12 7l7 9H5z"/></svg></button>
+<button class="m3b" aria-label="Tilt less" onclick="m3tilt(-10)"><svg class="i" viewBox="0 0 24 24"><path d="M12 17L5 8h14z"/></svg></button>
+<button class="m3b" aria-label="My pickup" onclick="here&&m3.easeTo({center:[here.lng,here.lat]})"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
+<button class="m3b" aria-label="Close 3D" onclick="close3D()"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button></div></div>`);
+const M3SAT={version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Esri, Maxar, Earthstar Geographics'},lab:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19},dem:{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:14}},layers:[{id:'sat',type:'raster',source:'sat'},{id:'lab',type:'raster',source:'lab'}],terrain:{source:'dem',exaggeration:1.4}};
+const m3style=()=>m3sat?M3SAT:'https://tiles.openfreemap.org/styles/liberty';
+const ml3load=()=>m3load||(m3load=new Promise((res,rej)=>{const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css';document.head.appendChild(l);const e=document.createElement('script');e.src='https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';e.onload=res;e.onerror=()=>{m3load=null;rej(new Error('load'))};document.head.appendChild(e)}));
+function m3draw(){if(!m3)return;let pts=[];try{pts=poly&&poly.getPath?poly.getPath().getArray().map(p=>[p.lng(),p.lat()]):[]}catch(e){}
+ try{if(m3.getLayer('m3rc'))m3.removeLayer('m3rc');if(m3.getSource('m3r'))m3.removeSource('m3r');
+  if(pts.length>1){m3.addSource('m3r',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:pts}}});m3.addLayer({id:'m3rc',type:'line',source:'m3r',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#3b8cff','line-width':6,'line-opacity':.95}})}}catch(e){}}
+function m3pins(){m3mk.forEach(x=>x.remove());m3mk=[];const mk=(ll,c,i)=>{if(!ll||ll.lat==null)return;const d=document.createElement('div');d.innerHTML=_pn(c,i);d.style.cssText='width:44px;height:58px';m3mk.push(new maplibregl.Marker({element:d,anchor:'bottom'}).setLngLat([ll.lng,ll.lat]).addTo(m3))};
+ mk(here,'#2f7bff','<circle cx="22" cy="20" r="7.5" fill="#fff"/><circle cx="22" cy="20" r="3.4" fill="#2f7bff"/>');mk(drop,'#ff4d4f','<rect x="16.5" y="14.5" width="11" height="11" rx="2.6" fill="#fff"/>')}
+async function open3D(){
+ if(window.ZG_MAP_ID&&!EMB&&map&&map.setTilt){const t=map.getTilt?map.getTilt():0;map.setTilt(t>10?0:60);if(t<=10)map.setHeading(map.getHeading()||-20);return}
+ const el=document.getElementById('m3d');el.hidden=false;const pn=document.getElementById('pin');pn&&(pn.style.visibility='hidden');
+ try{await ml3load()}catch(e){close3D();return toast('3D view needs an internet connection.')}
+ const c=map&&map.getCenter?map.getCenter():null,ll=c?{lat:c.lat(),lng:c.lng()}:(here||{lat:-17.83,lng:31.05}),gz=(map&&map.getZoom?map.getZoom():16),z=Math.min(18,Math.max(14,gz-1));
+ if(!m3){m3=new maplibregl.Map({container:'m3m',style:m3style(),center:[ll.lng,ll.lat],zoom:z,pitch:62,bearing:-20,maxPitch:80,attributionControl:{compact:true}});m3.on('style.load',m3draw)}
+ else{m3.jumpTo({center:[ll.lng,ll.lat],zoom:z,pitch:62,bearing:-20});m3.resize();m3draw()}
+ m3pins();document.getElementById('m3t').textContent='2D'}
+function close3D(){const el=document.getElementById('m3d');el.hidden=true;const pn=document.getElementById('pin');pn&&(pn.style.visibility='')}
+function m3pitch(){if(!m3)return;const up=m3.getPitch()>10;m3.easeTo({pitch:up?0:62,bearing:up?0:m3.getBearing(),duration:600});document.getElementById('m3t').textContent=up?'3D':'2D'}
+function m3layer(){if(!m3)return;m3sat=!m3sat;m3.setStyle(m3style());toast(m3sat?'Satellite':'Map with 3D buildings')}
+const m3rot=d=>m3&&m3.easeTo({bearing:m3.getBearing()+d,duration:300}),m3tilt=d=>m3&&m3.easeTo({pitch:Math.max(0,Math.min(80,m3.getPitch()+d)),duration:250});
 </script>
 </body></html>
