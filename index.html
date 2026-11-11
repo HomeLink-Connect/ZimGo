@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="ZimGo: name your fare and ride anywhere in Zimbabwe.">
 <link rel="manifest" href="manifest.webmanifest">
-<script>window.__gm=0;window.__gmcb=function(){window.__gm=1;window.initMap&&window.initMap()};(function(){var e=document.createElement('script');e.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCxHHRKO6D_-qVK1oqEQCKSCXkoAEuvJO4&callback=__gmcb&loading=async&v=weekly';e.async=true;e.onerror=function(){window.__gmerr=1;window.useEmbed&&window.useEmbed()};document.head.appendChild(e)})()</script>
+<script>window.ZG_MAP_ID='';/* paste a Google Cloud Map ID (vector enabled) here for the sharpest map */window.__gm=0;window.__gmcb=function(){window.__gm=1;window.initMap&&window.initMap()};(function(){var e=document.createElement('script');e.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCxHHRKO6D_-qVK1oqEQCKSCXkoAEuvJO4&callback=__gmcb&loading=async&v=weekly';e.async=true;e.onerror=function(){window.__gmerr=1;window.useEmbed&&window.useEmbed()};document.head.appendChild(e)})()</script>
 
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -428,6 +428,10 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 .c2o img{left:0;bottom:0;width:100%;height:calc(100% - 62px);object-fit:contain;object-position:center bottom}
 .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px;font:700 12.5px Inter,sans-serif;color:var(--mut)}.rh button{border:0;background:none;color:var(--accX);font:800 13px Inter,sans-serif;cursor:pointer;padding:6px}
 [data-ri]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#zm{position:absolute;left:14px;bottom:240px;z-index:500;display:flex;flex-direction:column;gap:10px}
+#zm button{width:52px;height:52px;border-radius:50%;background:var(--fab);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
+#zm button:active{transform:scale(.92)}#zm .i{width:26px;height:26px}#zm button.on{background:var(--acc)}#zm button.on .i{fill:#fff}
+
 #sheet{will-change:transform}#sheet.min{transform:translateY(calc(100% - 84px))}#sheet.min>*{pointer-events:none}
 #sheet::after{content:"";position:absolute;left:0;right:0;top:0;height:30px}
 
@@ -459,6 +463,7 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
 <button id="menu" hidden onclick="openMenu()">☰</button>
 <div id="top" hidden></div>
 <div id="pin" hidden><div class="lbl"><small id="pl">Pickup point</small><b id="pn">…</b></div><div class="ic" id="pic"></div><div class="st"></div></div>
+<div id="zm" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button></div>
 <button id="loc" hidden onclick="locate()"><svg class="i" viewBox="0 0 24 24" fill="#fff"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
 <div id="sheet"></div>
 <div id="srch" hidden>
@@ -639,14 +644,14 @@ async function saveProf(){
 
 let EMB=false,emb={c:null,url:''},embT=0,_mr;
 const mapReady=new Promise(r=>{_mr=r});
-window.initMap=async()=>{if(EMB)return;try{await google.maps.importLibrary('maps')}catch(e){}['marker','geocoding','routes','places'].forEach(l=>google.maps.importLibrary(l).catch(()=>0));map=new google.maps.Map($('#map'),{center:(()=>{try{const a=JSON.parse(localStorage.zg_ll);return{lat:a[0],lng:a[1]}}catch(e){return{lat:-17.8292,lng:31.0522}}})(),zoom:15,disableDefaultUI:true,gestureHandling:'greedy',draggable:true,clickableIcons:false,styles:curStyle()});
+window.initMap=async()=>{if(EMB)return;try{await google.maps.importLibrary('maps')}catch(e){}['marker','geocoding','routes','places'].forEach(l=>google.maps.importLibrary(l).catch(()=>0));map=new google.maps.Map($('#map'),{center:(()=>{try{const a=JSON.parse(localStorage.zg_ll);return{lat:a[0],lng:a[1]}}catch(e){return{lat:-17.8292,lng:31.0522}}})(),zoom:15,disableDefaultUI:true,gestureHandling:'greedy',draggable:true,clickableIcons:false,maxZoom:21,minZoom:3,isFractionalZoomEnabled:true,...(window.ZG_MAP_ID?{mapId:window.ZG_MAP_ID,renderingType:'VECTOR',colorScheme:zgDark()?'DARK':'LIGHT',headingInteractionEnabled:true,tiltInteractionEnabled:true}:{styles:curStyle()})});
  map.addListener('dragstart',()=>{const p=$('#pin');p&&p.classList.add('lift')});map.addListener('dragend',onDrag);_mr()};
 window.gm_authFailure=()=>useEmbed();
 if(window.__gm)window.initMap();else if(window.__gmerr)useEmbed();
 setTimeout(()=>{if(!map)useEmbed()},8000);
 /* Keyless Google Maps embed (same method as the school website). Used automatically when the Maps JS API key/APIs are not working. */
 function embShow(u){if(emb.url===u)return;emb.url=u;$('#emb').src=u}
-function embCenter(ll){emb.c={lat:ll.lat,lng:ll.lng};embShow(`https://www.google.com/maps?q=${ll.lat},${ll.lng}&z=16&output=embed`)}
+function embCenter(ll){emb.c={lat:ll.lat,lng:ll.lng};embShow(`https://www.google.com/maps?q=${ll.lat},${ll.lng}&z=${emb.z||16}${emb.t?'&t='+emb.t:''}&output=embed`)}
 function useEmbed(){
  if(EMB)return;EMB=true;document.body.classList.add('emb');
  for(const k in M){try{M[k].setMap(null)}catch(e){}delete M[k]}
@@ -2007,5 +2012,25 @@ function sheetDrag(SH,env){const PEEK=84;let on=false,y0=0,off0=0,moved=0,t0=0,l
  SH.addEventListener('click',e=>{if(Date.now()-(env._d||0)<500||isMin()){e.stopPropagation();e.preventDefault()}},true);
  let sig='';new MutationObserver(()=>{const n=[typeof stage!=='undefined'?stage:'',typeof ride!=='undefined'&&ride?ride.id+ride.status:'',typeof rtype!=='undefined'?rtype:''].join('|');if(n!==sig){sig=n;SH.classList.remove('min')}}).observe(SH,{childList:true})}
 {const SH=document.getElementById('sheet');if(SH)sheetDrag(SH,window)}
+
+/* ============ one-finger zoom: buttons, double-tap, and double-tap-then-drag ============ */
+function zoomBy(d){if(EMB){emb.z=Math.max(3,Math.min(20,(emb.z||16)+d));const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z}${emb.t?'&t='+emb.t:''}&output=embed`);return}
+ if(map&&map.getZoom)map.setZoom(Math.max(3,Math.min(20,Math.round(map.getZoom())+d)))}
+{const z=document.getElementById('zm'),sh=document.getElementById('sheet'),lc=document.getElementById('loc');
+ const place=()=>{if(!z)return;z.hidden=!!(lc&&lc.hidden);const t=sh?sh.getBoundingClientRect().top:innerHeight*.6;z.style.bottom=Math.max(14,innerHeight-t+14)+'px'};
+ place();setInterval(place,250);addEventListener('resize',place)}
+{const m=document.getElementById('map');let lastEnd=0,lx=0,ly=0,mode=0,y0=0,z0=0,moved=0;
+ if(m){m.addEventListener('touchstart',e=>{if(e.touches.length!==1||EMB||!map||!map.getZoom){mode=0;return}const t=e.touches[0];
+   if(Date.now()-lastEnd<320&&Math.hypot(t.clientX-lx,t.clientY-ly)<50){mode=1;y0=t.clientY;z0=map.getZoom();moved=0;e.preventDefault();e.stopPropagation()}else mode=0},{capture:true,passive:false});
+  m.addEventListener('touchmove',e=>{if(mode!==1)return;e.preventDefault();e.stopPropagation();const dy=y0-e.touches[0].clientY;moved=Math.max(moved,Math.abs(dy));map.setZoom(Math.max(3,Math.min(20,Math.round(z0+dy/70))))},{capture:true,passive:false});
+  m.addEventListener('touchend',e=>{const t=e.changedTouches[0];if(mode===1){e.preventDefault();e.stopPropagation();if(moved<10)zoomBy(1);mode=0;lastEnd=0;return}lastEnd=Date.now();lx=t.clientX;ly=t.clientY},{capture:true,passive:false})}}
+
+/* ============ sharpest map: satellite (hybrid) toggle, deep zoom, optional vector Map ID ============ */
+function zgDark(){try{const h=(getComputedStyle(document.documentElement).getPropertyValue('--bg0')||'#000').trim().replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return(((n>>16)&255)*.3+((n>>8)&255)*.59+(n&255)*.11)<110}catch(e){return false}}
+function applyLayer(hy){const b=document.getElementById('ml');b&&b.classList.toggle('on',!!hy);
+ if(EMB){emb.t=hy?'h':'';const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z||16}${emb.t?'&t='+emb.t:''}&output=embed`);return}
+ if(!map||!map.setMapTypeId)return;map.setMapTypeId(hy?'hybrid':'roadmap');try{map.setTilt(hy&&map.getZoom()>=17?45:0)}catch(e){}}
+function mapLayer(){const hy=localStorage.zg_hy==='1'?0:1;try{localStorage.zg_hy=hy?'1':'0'}catch(e){}applyLayer(hy);toast(hy?'Satellite view':'Map view')}
+mapReady.then(()=>{if(localStorage.zg_hy==='1')applyLayer(1);if(map&&map.addListener)map.addListener('zoom_changed',()=>{try{if(map.getMapTypeId()==='hybrid')map.setTilt(map.getZoom()>=17?45:0)}catch(e){}})});
 </script>
 </body></html>
