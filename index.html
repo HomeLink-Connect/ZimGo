@@ -428,6 +428,7 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 .c2o img{left:0;bottom:0;width:100%;height:calc(100% - 62px);object-fit:contain;object-position:center bottom}
 .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px;font:700 12.5px Inter,sans-serif;color:var(--mut)}.rh button{border:0;background:none;color:var(--accX);font:800 13px Inter,sans-serif;cursor:pointer;padding:6px}
 [data-ri]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#zm #zmt.on{background:var(--acc)}#zm #zmt.on .i{stroke:#fff}
 #m3d{position:absolute;inset:0;z-index:450;background:#0b1730}#m3d[hidden]{display:none}#m3m{position:absolute;inset:0}
 #m3s{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);display:grid;grid-template-columns:repeat(2,50px);gap:8px;z-index:2}
 .m3b{width:50px;height:50px;border-radius:16px;background:var(--fab);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);color:var(--tx);font:800 15px Inter,sans-serif;display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
@@ -455,8 +456,7 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 #zm button{width:52px;height:52px;border-radius:50%;background:var(--fab);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}
 #zm button:active{transform:scale(.92)}#zm .i{width:26px;height:26px}#zm button.on{background:var(--acc)}#zm button.on .i{fill:#fff}
 
-#sheet{will-change:transform}#sheet.min{transform:translateY(calc(100% - 84px))}#sheet.min>*{pointer-events:none}
-#sheet::after{content:"";position:absolute;left:0;right:0;top:0;height:30px}
+#sheet.min{transform:translateY(calc(100% - 84px))}#sheet.min>*{pointer-events:none}
 
 html{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
 body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
@@ -486,7 +486,7 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
 <button id="menu" hidden onclick="openMenu()">☰</button>
 <div id="top" hidden></div>
 <div id="pin" hidden><div class="lbl"><small id="pl">Pickup point</small><b id="pn">…</b></div><div class="ic" id="pic"></div><div class="st"></div></div>
-<div id="zm" hidden><div id="zmi"><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button><button type="button" id="m3e" aria-label="3D view" onclick="open3D()" style="font:800 16px Inter,sans-serif;color:var(--tx)">3D</button></div>
+<div id="zm" hidden><div id="zmi" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button><button type="button" id="m3e" aria-label="3D view" onclick="open3D()" style="font:800 16px Inter,sans-serif;color:var(--tx)">3D</button></div><button type="button" id="zmt" aria-label="Map tools" onclick="zmToggle()"><svg class="i" viewBox="0 0 24 24" style="fill:none;stroke:var(--tx);stroke-width:2;stroke-linecap:round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg></button></div>
 <button id="loc" hidden onclick="locate()"><svg class="i" viewBox="0 0 24 24" fill="#fff"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
 <div id="sheet"></div>
 <div id="srch" hidden>
@@ -2023,11 +2023,11 @@ async function runSearch(v){const id=++_qs;$('#sres').innerHTML='<p class="m" st
 /* ============ bottom sheet: drag the handle down to peek at the map, up (or tap) to bring it back ============ */
 function sheetDrag(SH,env){const PEEK=84;let on=false,y0=0,off0=0,moved=0,t0=0,lastY=0,hTap=false;
  const minOff=()=>Math.max(0,SH.offsetHeight-PEEK),isMin=()=>SH.classList.contains('min');
- const start=y=>{const top=SH.getBoundingClientRect().top;if(y-top>(isMin()?PEEK:30))return false;on=true;y0=lastY=y;moved=0;t0=Date.now();off0=isMin()?minOff():0;hTap=isMin()||y-top<=26;SH.style.transition='none';return true};
+ const start=y=>{const top=SH.getBoundingClientRect().top;if(y-top>(isMin()?PEEK:30))return false;on=true;y0=lastY=y;moved=0;t0=Date.now();off0=isMin()?minOff():0;hTap=isMin()||y-top<=26;SH.style.transition='none';SH.style.willChange='transform';return true};
  const move=y=>{if(!on)return;moved=Math.max(moved,Math.abs(y-y0));lastY=y;SH.style.transform=`translateY(${Math.min(minOff(),Math.max(0,off0+y-y0))}px)`};
  const end=()=>{if(!on)return;on=false;const dy=lastY-y0,o=Math.min(minOff(),Math.max(0,off0+dy));let col;
   if(moved<8){if(!hTap){SH.style.transition='';SH.style.transform='';return}col=!isMin()}else{const v=dy/Math.max(1,Date.now()-t0);col=v>.35?true:v<-.35?false:o>minOff()/2}
-  SH.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';SH.style.transform='';SH.classList.toggle('min',col);setTimeout(()=>{SH.style.transition=''},320);env._d=Date.now()};
+  SH.style.transition='transform .28s cubic-bezier(.2,.8,.2,1)';SH.style.transform='';SH.classList.toggle('min',col);setTimeout(()=>{SH.style.transition='';SH.style.willChange=''},320);env._d=Date.now()};
  SH.addEventListener('touchstart',e=>{start(e.touches[0].clientY)},{passive:true});
  SH.addEventListener('touchmove',e=>move(e.touches[0].clientY),{passive:true});
  SH.addEventListener('touchend',end,{passive:true});SH.addEventListener('touchcancel',end,{passive:true});
@@ -2108,5 +2108,12 @@ function close3D(){const el=document.getElementById('m3d');el.hidden=true;const 
 function m3pitch(){if(!m3)return;const up=m3.getPitch()>10;m3.easeTo({pitch:up?0:62,bearing:up?0:m3.getBearing(),duration:600});document.getElementById('m3t').textContent=up?'3D':'2D'}
 function m3layer(){if(!m3)return;m3sat=!m3sat;m3.setStyle(m3style());toast(m3sat?'Satellite':'Map with 3D buildings')}
 const m3rot=d=>m3&&m3.easeTo({bearing:m3.getBearing()+d,duration:300}),m3tilt=d=>m3&&m3.easeTo({pitch:Math.max(0,Math.min(80,m3.getPitch()+d)),duration:250});
+
+/* ============ cars always paint: if a picture comes up blank on a phone, load it again ============ */
+{const heal=()=>document.querySelectorAll('#sheet img').forEach(i=>{if(i.complete&&i.naturalWidth===0&&(i.dataset.fx||0)<3){i.dataset.fx=(+i.dataset.fx||0)+1;const u=i.getAttribute('src');if(u){i.removeAttribute('src');i.src=i.classList.contains('car3d')?(i.classList.contains('c2c')?IMG_CITY:IMG_RIDE):u}}});
+ const _iv7=idleView;idleView=function(){_iv7();[300,900,2000].forEach(t=>setTimeout(heal,t))};
+ document.addEventListener('error',e=>{if(e.target&&e.target.tagName==='IMG')heal()},true)}
+
+function zmToggle(){const b=document.getElementById('zmi');b.hidden=!b.hidden;document.getElementById('zmt').classList.toggle('on',!b.hidden)}
 </script>
 </body></html>
