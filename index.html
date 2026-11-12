@@ -10,7 +10,67 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="ZimGo: name your fare and ride anywhere in Zimbabwe.">
 <link rel="manifest" href="manifest.webmanifest">
-<script>(function(){var oe=console.error;console.error=function(){try{var m=[].join.call(arguments,' ');if(/Maps JavaScript API|MapError|ApiNotActivated|RefererNotAllowed|BillingNotEnabled|InvalidKey|MissingKey/i.test(m)){var x=m.match(/([A-Za-z]+MapError)/);window.__gmWhy=x?x[1]:m.slice(0,70)}}catch(e){}return oe.apply(console,arguments)}})();window.ZG_MAP_ID='';/* paste a Google Cloud Map ID (vector enabled) here for the sharpest map */window.__gm=0;window.__gmcb=function(){window.__gm=1;window.initMap&&window.initMap()};(function(){var e=document.createElement('script');e.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCUcnlMxXwm3sUljZgkU8xRSfy9cTOC0YI&callback=__gmcb&loading=async&v=weekly';e.async=true;e.onerror=function(){window.__gmerr=1;window.useEmbed&&window.useEmbed()};document.head.appendChild(e)})()</script>
+<script>
+window.ZG_ENGINE='open';/* 'open' = free map: no Google account, key or card needed.  Change to 'google' once a Google Maps key works. */
+window.ZG_MAP_ID='';window.__gm=0;window.__gmcb=function(){window.__gm=1;window.initMap&&window.initMap()};
+window.zgShim=function(){var ML=window.maplibregl,lines=[],pid=0;
+ function ll(p){return p&&typeof p.lat==='function'?{lat:p.lat(),lng:p.lng()}:p}
+ function LatLng(a,b){this._a=a;this._b=b}LatLng.prototype.lat=function(){return this._a};LatLng.prototype.lng=function(){return this._b};LatLng.prototype.toJSON=function(){return{lat:this._a,lng:this._b}};
+ function Size(w,h){this.width=w;this.height=h}function Point(x,y){this.x=x;this.y=y}
+ function Bounds(){this.p=[]}Bounds.prototype.extend=function(q){this.p.push(ll(q));return this};
+ var STREET='https://tiles.openfreemap.org/styles/liberty';
+ var SAT={version:8,sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},lab:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19}},layers:[{id:'sat',type:'raster',source:'sat'},{id:'lab',type:'raster',source:'lab'}]};
+ function GMap(el,o){var c=(o&&o.center)||{lat:-17.8292,lng:31.0522};c=ll(c);this.el=el;this.sat=false;
+  this.m=new ML.Map({container:el,style:STREET,center:[c.lng,c.lat],zoom:((o&&o.zoom)||15)-1,maxZoom:21,minZoom:2,dragRotate:false,pitchWithRotate:false,attributionControl:{compact:true},fadeDuration:0});
+  try{this.m.touchZoomRotate.disableRotation()}catch(e){}try{this.m.touchPitch.disable()}catch(e){}
+  this.m.on('style.load',function(){lines.slice().forEach(function(l){l._add()})});this.th()}
+ GMap.prototype.th=function(){var d=false;try{d=window.zgDark&&zgDark()}catch(e){}this.el.classList.toggle('zgdark',!!d&&!this.sat)};
+ GMap.prototype.setCenter=function(p){p=ll(p);this.m.jumpTo({center:[p.lng,p.lat]})};
+ GMap.prototype.panTo=function(p){p=ll(p);this.m.easeTo({center:[p.lng,p.lat],duration:450})};
+ GMap.prototype.setZoom=function(z){this.m.easeTo({zoom:z-1,duration:250})};
+ GMap.prototype.getZoom=function(){return this.m.getZoom()+1};
+ GMap.prototype.getCenter=function(){var c=this.m.getCenter();return new LatLng(c.lat,c.lng)};
+ GMap.prototype.getBounds=function(){var b=this.m.getBounds();return{contains:function(p){p=ll(p);return p.lat>=b.getSouth()&&p.lat<=b.getNorth()&&p.lng>=b.getWest()&&p.lng<=b.getEast()}}};
+ GMap.prototype.fitBounds=function(b,pad){var P=b.p;if(!P.length)return;var bb=new ML.LngLatBounds([P[0].lng,P[0].lat],[P[0].lng,P[0].lat]);P.forEach(function(p){bb.extend([p.lng,p.lat])});
+  var d=typeof pad==='number'?{top:pad,bottom:pad,left:pad,right:pad}:{top:(pad&&pad.top)||0,bottom:(pad&&pad.bottom)||0,left:(pad&&pad.left)||0,right:(pad&&pad.right)||0};this.m.fitBounds(bb,{padding:d,duration:600,maxZoom:17})};
+ GMap.prototype.addListener=function(n,f){var m=this.m,ev=n,h;
+  if(n==='dragend'){ev='moveend';h=function(e){if(e&&e.originalEvent)f()}}else if(n==='zoom_changed'){ev='zoomend';h=function(){f()}}else if(n==='click'){h=function(e){f({latLng:new LatLng(e.lngLat.lat,e.lngLat.lng)})}}else h=function(){f()};
+  m.on(ev,h);return{remove:function(){m.off(ev,h)}}};
+ GMap.prototype.setOptions=function(o){if(o&&'styles' in o)this.th()};
+ GMap.prototype.setMapTypeId=function(t){var s=(t==='hybrid'||t==='satellite');if(s===this.sat)return;this.sat=s;this.m.setStyle(s?SAT:STREET);this.th()};
+ GMap.prototype.getMapTypeId=function(){return this.sat?'hybrid':'roadmap'};
+ GMap.prototype.setTilt=function(){};GMap.prototype.getTilt=function(){return 0};GMap.prototype.setHeading=function(){};GMap.prototype.getHeading=function(){return 0};GMap.prototype.set=function(){};
+ function Marker(o){this.z=o.zIndex||0;this.map=null;this.pos=ll(o.position)||{lat:0,lng:0};this.el=document.createElement('div');if(o.title)this.el.title=o.title;this.setIcon(o.icon);if(o.map)this.setMap(o.map)}
+ Marker.prototype.setIcon=function(ic){var el=this.el,off=[0,0],pe=el.style.pointerEvents||'none';el.removeAttribute('style');el.innerHTML='';
+  if(ic&&ic.url){var w=ic.scaledSize?ic.scaledSize.width:32,h=ic.scaledSize?ic.scaledSize.height:32,a=ic.anchor||{x:w/2,y:h/2},im=new Image();im.src=ic.url;im.draggable=false;im.style.cssText='width:'+w+'px;height:'+h+'px;display:block;user-select:none;-webkit-user-drag:none';el.appendChild(im);el.style.width=w+'px';el.style.height=h+'px';off=[w/2-a.x,h/2-a.y]}
+  else{var r=(ic&&ic.scale)||7;el.style.cssText='width:'+2*r+'px;height:'+2*r+'px;border-radius:50%;background:'+((ic&&ic.fillColor)||'#2f7bff')+';border:'+((ic&&ic.strokeWeight)||3)+'px solid '+((ic&&ic.strokeColor)||'#fff')+';box-sizing:content-box;box-shadow:0 1px 4px rgba(0,0,0,.4)'}
+  el.style.pointerEvents=pe;el.style.zIndex=this.z;this.off=off;if(this.mk)this.mk.setOffset(off)};
+ Marker.prototype.setMap=function(m){if(!m){if(this.mk)this.mk.remove();this.mk=null;this.map=null;return}if(this.mk&&this.map===m)return;this.map=m;this.mk=new ML.Marker({element:this.el,anchor:'center',offset:this.off||[0,0]}).setLngLat([this.pos.lng,this.pos.lat]).addTo(m.m)};
+ Marker.prototype.setPosition=function(p){this.pos=ll(p);if(this.mk)this.mk.setLngLat([this.pos.lng,this.pos.lat])};
+ Marker.prototype.getPosition=function(){return new LatLng(this.pos.lat,this.pos.lng)};
+ Marker.prototype.addListener=function(n,f){if(n==='click'){this.el.style.pointerEvents='auto';this.el.addEventListener('click',f)}return{remove:function(){}}};
+ function Poly(o){this.id='zgp'+(++pid);this.path=(o.path||[]).map(ll);this.o=o;this.map=null;if(o.map)this.setMap(o.map)}
+ Poly.prototype._clear=function(){var m=this.map&&this.map.m;if(!m)return;try{if(m.getLayer(this.id+'l'))m.removeLayer(this.id+'l');if(m.getLayer(this.id+'c'))m.removeLayer(this.id+'c');if(m.getSource(this.id))m.removeSource(this.id)}catch(e){}};
+ Poly.prototype._add=function(){var m=this.map&&this.map.m;if(!m)return;this._clear();var w=this.o.strokeWeight||5;try{
+  m.addSource(this.id,{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:this.path.map(function(p){return[p.lng,p.lat]})}}});
+  m.addLayer({id:this.id+'c',type:'line',source:this.id,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':w+4,'line-opacity':.95}});
+  m.addLayer({id:this.id+'l',type:'line',source:this.id,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#2f7bff','line-width':w}})}catch(e){}};
+ Poly.prototype.setMap=function(m){var self=this;if(!m){this._clear();lines=lines.filter(function(l){return l!==self});this.map=null;return}this.map=m;if(lines.indexOf(this)<0)lines.push(this);if(m.m.isStyleLoaded())this._add();else m.m.once('load',function(){self._add()})};
+ Poly.prototype.getPath=function(){var p=this.path;return{getArray:function(){return p.map(function(q){return new LatLng(q.lat,q.lng)})}}};
+ function Circle(){}Circle.prototype.setCenter=Circle.prototype.setRadius=Circle.prototype.setMap=function(){};
+ function Geocoder(){}Geocoder.prototype.geocode=function(){return Promise.reject(new Error('off'))};
+ function Dir(){}Dir.prototype.route=function(){return Promise.reject(new Error('off'))};
+ window.google={maps:{Map:GMap,Marker:Marker,Polyline:Poly,LatLng:LatLng,LatLngBounds:Bounds,Size:Size,Point:Point,Circle:Circle,Geocoder:Geocoder,DirectionsService:Dir,SymbolPath:{CIRCLE:0},ColorScheme:{DARK:'DARK',LIGHT:'LIGHT'},
+  event:{removeListener:function(l){if(l&&l.remove)l.remove()}},
+  importLibrary:function(n){return n==='places'?Promise.reject(new Error('places off')):Promise.resolve({Route:{computeRoutes:function(){return Promise.reject(new Error('off'))}}})}}}};
+(function(){
+ if(window.ZG_ENGINE==='google'){var e=document.createElement('script');e.src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCUcnlMxXwm3sUljZgkU8xRSfy9cTOC0YI&callback=__gmcb&loading=async&v=weekly';e.async=true;e.onerror=function(){window.__gmerr=1;window.useEmbed&&window.useEmbed()};document.head.appendChild(e);return}
+ window.ZG_OPEN=true;
+ var l=document.createElement('link');l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css';document.head.appendChild(l);
+ var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';s.async=true;
+ s.onload=function(){try{window.zgShim();window.__gmcb()}catch(x){window.__gmerr=1;window.useEmbed&&window.useEmbed()}};
+ s.onerror=function(){window.__gmerr=1;window.useEmbed&&window.useEmbed()};document.head.appendChild(s)})();
+</script>
 
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -456,9 +516,9 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 .c2o img{left:0;bottom:0;width:100%;height:calc(100% - 62px);object-fit:contain;object-position:center bottom}
 .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px;font:700 12.5px Inter,sans-serif;color:var(--mut)}.rh button{border:0;background:none;color:var(--accX);font:800 13px Inter,sans-serif;cursor:pointer;padding:6px}
 [data-ri]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-body.emb #emb{pointer-events:none}body.emb #pin{pointer-events:none}
-#ecars,#egest{position:absolute;inset:0}#ecars{overflow:hidden;pointer-events:none;z-index:2}#egest{z-index:3;touch-action:none}
-.ecar{position:absolute;left:0;top:0;width:60px;height:60px;pointer-events:none;will-change:transform;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45))}
+.zgdark .maplibregl-canvas{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.95)}
+#map .maplibregl-ctrl-bottom-right{bottom:6px}.maplibregl-ctrl-attrib{font-size:9px}.maplibregl-marker{will-change:transform}
+
 
 .nbc{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 20px);z-index:480;display:none;align-items:center;gap:8px;max-width:calc(100% - 150px);padding:9px 14px;border-radius:99px;background:var(--fab);color:var(--tx);border:1px solid var(--line2);box-shadow:0 2px 12px var(--shadow);font:700 13.5px Inter,sans-serif;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nbc.on{display:flex}.nbc i{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);flex:none}.nbc .i{width:18px;height:18px}.nbc span{opacity:.75;font-weight:600}
@@ -730,6 +790,7 @@ function fit(pts){if(!pts.length)return;if(EMB){const a=pts[0],b=pts[1];if(b)emb
 async function nrev(ll){try{const j=await(await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${ll.lat}&lon=${ll.lng}`)).json();return(j.display_name||'').split(',').slice(0,2).join(',')||'Dropped pin'}catch(e){return'Dropped pin'}}
 async function rev(ll){if(EMB)return nrev(ll);try{const r=await new google.maps.Geocoder().geocode({location:ll});const f=r.results.find(x=>!/plus_code/.test(x.types.join()))||r.results[0];return(f.formatted_address||'').split(',').slice(0,2).join(',')||'Dropped pin'}catch{return nrev(ll)}}
 async function route(a,b){
+ if(window.ZG_OPEN){try{return await osrmRoute(a,b)}catch(e){}}
  if(EMB){const km=hv(a,b)*1.3;return{km,mins:Math.max(1,Math.round(km*2.5)),path:[]}}
  try{const{Route}=await google.maps.importLibrary('routes');const{routes}=await Route.computeRoutes({origin:{lat:a.lat,lng:a.lng},destination:{lat:b.lat,lng:b.lng},travelMode:'DRIVING',fields:['path','distanceMeters','durationMillis']});const r=routes[0];return{km:r.distanceMeters/1000,mins:Math.max(1,Math.round(r.durationMillis/60000)),path:r.path.map(p=>({lat:p.lat,lng:p.lng}))}}catch(e){}
  try{const j=await new google.maps.DirectionsService().route({origin:a,destination:b,travelMode:'DRIVING'});const l=j.routes[0].legs[0];return{km:l.distance.value/1000,mins:Math.max(1,Math.round(l.duration.value/60)),path:j.routes[0].overview_path.map(p=>({lat:p.lat(),lng:p.lng()}))}}catch(e){}
@@ -2172,28 +2233,7 @@ const _nd=new Map();let _ndL=[],_perr='',_hold=0;
 function nearChip(h,click){const c=document.getElementById('nbc');if(!c)return;if(h){c.innerHTML=h;c.classList.add('on');c.style.pointerEvents=click?'auto':'none';c.onclick=click?()=>showNear():null}else c.classList.remove('on')}
 function clearNear(){_nd.forEach(m=>m.setMap(null));_nd.clear();_ndL=[];placeEcars(false)}
 function glide(m,to,ms){const f=m.getPosition(),a={lat:f.lat(),lng:f.lng()};if(m._r)cancelAnimationFrame(m._r);const t0=performance.now(),st=n=>{const t=Math.min(1,(n-t0)/ms);m.setPosition({lat:a.lat+(to.lat-a.lat)*t,lng:a.lng+(to.lng-a.lng)*t});if(t<1)m._r=requestAnimationFrame(st)};m._r=requestAnimationFrame(st)}
-/* fallback (Google embed) map: world-pixel maths so cars sit exactly on the picture */
-const wpx=(lat,lng,z)=>{const s=256*Math.pow(2,z),x=(lng+180)/360*s,sn=Math.sin(lat*Math.PI/180);return[x,(.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*s]};
-const unwpx=(x,y,z)=>{const s=256*Math.pow(2,z),n=Math.PI-2*Math.PI*y/s;return{lat:180/Math.PI*Math.atan(.5*(Math.exp(n)-Math.exp(-n))),lng:x/s*360-180}};
-function placeEcars(anim){const L=document.getElementById('ecars');if(!L||!EMB||!emb.c||_hold)return;const z=emb.z||16,c=wpx(emb.c.lat,emb.c.lng,z),W=innerWidth,H=innerHeight,seen=new Set();
- _ndL.forEach(v=>{seen.add(String(v.uid));let el=[...L.children].find(e=>e.dataset.u===String(v.uid));const p=wpx(v.lat,v.lng,z),px=W/2+p[0]-c[0]-30,py=H/2+p[1]-c[1]-30,src=carSprite(v.h||0,carRGB(v.car))||'';
-  if(!el){el=document.createElement('img');el.className='ecar';el.dataset.u=String(v.uid);el.style.transition='none';el.style.transform=`translate(${px}px,${py}px)`;L.appendChild(el);void el.offsetWidth}
-  if(src&&el.getAttribute('src')!==src)el.src=src;el.style.transition=anim?'transform 10s linear':'none';el.style.transform=`translate(${px}px,${py}px)`});
- [...L.children].forEach(e=>{if(!seen.has(e.dataset.u))e.remove()})}
-function setupEmbOverlay(){if(document.getElementById('ecars'))return;document.body.insertAdjacentHTML('beforeend','<div id="ecars"></div><div id="egest"></div>');
- const g=document.getElementById('egest'),F=document.getElementById('emb'),C=document.getElementById('ecars');let st=null,lt=0;const d2=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),tf=v=>{F.style.transform=v;C.style.transform=v};
- const reload=()=>{_hold=1;const rel=()=>{if(!_hold)return;_hold=0;tf('');placeEcars(false)};F.addEventListener('load',rel,{once:true});setTimeout(rel,3000)};
- g.addEventListener('touchstart',e=>{if(e.touches.length>1){st={m:'z',d:d2(e.touches[0],e.touches[1]),s:1};return}const t=e.touches[0];st={m:'p',x:t.clientX,y:t.clientY,dx:0,dy:0,mv:0}},{passive:true});
- g.addEventListener('touchmove',e=>{if(!st)return;if(e.touches.length>1){if(st.m!=='z')st={m:'z',d:d2(e.touches[0],e.touches[1]),s:1};st.s=Math.max(.4,Math.min(4,d2(e.touches[0],e.touches[1])/st.d));tf(`scale(${st.s})`);return}
-  if(st.m==='p'){const t=e.touches[0];st.dx=t.clientX-st.x;st.dy=t.clientY-st.y;st.mv=Math.max(st.mv,Math.abs(st.dx)+Math.abs(st.dy));tf(`translate(${st.dx}px,${st.dy}px)`)}},{passive:true});
- g.addEventListener('touchend',e=>{if(!st||e.touches.length)return;const s=st;st=null;
-  if(s.m==='z'){const z0=emb.z||16,nz=Math.max(3,Math.min(20,Math.round(z0+Math.log2(s.s))));if(nz!==z0&&emb.c){emb.z=nz;reload();embCenter(emb.c)}else tf('');return}
-  if(s.mv>8&&emb.c){const z=emb.z||16,c=wpx(emb.c.lat,emb.c.lng,z);reload();embCenter(unwpx(c[0]-s.dx,c[1]-s.dy,z));try{if(typeof onDrag==='function')onDrag()}catch(er){}return}
-  tf('');const n=Date.now();if(n-lt<320){lt=0;zoomBy(1)}else lt=n},{passive:true});
- addEventListener('resize',()=>placeEcars(false));placeEcars(false)}
-{const _es=embShow;embShow=function(u){_es(u);placeEcars(false)}}
-{const _ue=useEmbed;useEmbed=function(){const was=EMB;_ue();if(EMB&&!was){setupEmbOverlay();try{toast('Google map not loading'+(window.__gmWhy?': '+window.__gmWhy:'')+'. Using the backup map.')}catch(e){}}}}
-if(EMB)setupEmbOverlay();
+function placeEcars(){}
 async function pollNear(){if(document.hidden||typeof me==='undefined'||!me||me.role==='driver')return;if(ride){clearNear();return}
  try{const d=(await db.collection('presence').doc('all').get()).data(),all=(d&&d.d)||{},c=(typeof here!=='undefined'&&here&&here.lat!=null)?here:{lat:-17.8292,lng:31.0522},now=Date.now(),L=[];_perr='';
   Object.entries(all).forEach(([uid,v])=>{if(uid===me.uid||!v||now-v.t>75000)return;const km=kmB(c.lat,c.lng,v.lat,v.lng);if(km<=25)L.push({uid,lat:v.lat,lng:v.lng,h:v.h||0,car:v.car||'',km,age:Math.round((now-v.t)/1000)})});
@@ -2214,5 +2254,14 @@ function vehChip(){const c=document.getElementById('nbc');if(!c||typeof me==='un
  if(_perr){nearChip(`${ic('car',18)} Nearby cars unavailable: ${esc(_perr)}`,1);return}
  if(!ride&&_ndL.length)nearChip(`${ic('car',18)}${_ndL.length} ZimGo car${_ndL.length>1?'s':''} nearby<span>· ${_ndL[0].km.toFixed(1)} km</span>`,1);else nearChip('')}
 setInterval(()=>{try{vehChip()}catch(e){}},1500);setInterval(pollNear,10000);setTimeout(pollNear,4000);
+
+/* ============ FREE MAP: routing, local places, no live-traffic on the free map ============ */
+async function osrmRoute(a,b){const hosts=['https://router.project-osrm.org','https://routing.openstreetmap.de/routed-car'];
+ for(const h of hosts){try{const j=await(await fetch(`${h}/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`)).json(),r=j.routes&&j.routes[0];
+  if(r)return{km:r.distance/1000,mins:Math.max(1,Math.round(r.duration/60)),path:r.geometry.coordinates.map(c=>({lat:c[1],lng:c[0]}))}}catch(e){}}throw new Error('osrm')}
+{const _sa=searchAll;searchAll=async function(v){const base=await _sa(v),q=v.trim().toLowerCase();
+  const loc=q.length>=2?PASS.filter(t=>t[0].toLowerCase().startsWith(q)).map(t=>({lat:t[1],lng:t[2],name:t[0],sub:'Zimbabwe'})):[];
+  const seen=new Set(loc.map(x=>x.name.toLowerCase()));return loc.concat(base.filter(x=>!seen.has(String(x.name).toLowerCase()))).slice(0,14)}}
+if(window.ZG_OPEN){trafficToggle=function(){toast('Live traffic is not available on the free map.')};const tb=document.getElementById('trb');tb&&(tb.style.display='none')}
 </script>
 </body></html>
