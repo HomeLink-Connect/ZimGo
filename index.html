@@ -2266,7 +2266,7 @@ async function osrmRoute(a,b){const hosts=['https://router.project-osrm.org','ht
 if(window.ZG_OPEN){trafficToggle=function(){toast('Live traffic is not available on the free map.')};const tb=document.getElementById('trb');tb&&(tb.style.display='none')}
 
 /* ============ BINDURA PLACES (Realtime Database /places) ============ */
-const BND={list:[],ready:null,shown:false,pop:null};
+const BND={list:[],ready:null};
 BND.ready=new Promise(res=>{
  try{
   firebase.database().ref('places').once('value',snap=>{
@@ -2276,31 +2276,6 @@ BND.ready=new Promise(res=>{
    err=>{console.warn('places load failed',err&&err.message);res([])})
  }catch(e){console.warn('places load failed',e);res([])}
 });
-function bndShow(){
- if(BND.shown||EMB||!window.google||!map||!map.m||!BND.list.length)return;BND.shown=true;
- const m=map.m;
- const fc={type:'FeatureCollection',features:BND.list.map(p=>({type:'Feature',properties:{name:p.name},geometry:{type:'Point',coordinates:[p.lng,p.lat]}}))};
- function icon(){const S=40,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');
-  x.beginPath();x.arc(S/2,S/2,S/2-2,0,7);x.fillStyle='#ea4335';x.fill();x.lineWidth=3;x.strokeStyle='#fff';x.stroke();
-  x.beginPath();x.arc(S/2,S/2,6,0,7);x.fillStyle='#fff';x.fill();return x.getImageData(0,0,S,S)}
- function font(){try{const l=m.getStyle().layers.find(l=>l.type==='symbol'&&l.layout&&l.layout['text-font']);let f=l&&l.layout['text-font'];
-  if(Array.isArray(f)&&f[0]==='literal')f=f[1];if(Array.isArray(f)&&f.length&&f.every(x=>typeof x==='string'))return f}catch(e){}return['Noto Sans Regular']}
- function add(){try{
-  if(!m.getStyle())return;
-  if(!m.hasImage('bnd-ic'))m.addImage('bnd-ic',icon(),{pixelRatio:2});
-  if(!m.getSource('bnd'))m.addSource('bnd',{type:'geojson',data:fc});
-  if(!m.getLayer('bnd-places')){const sat=map.sat;
-   m.addLayer({id:'bnd-places',type:'symbol',source:'bnd',minzoom:11,
-    layout:{'icon-image':'bnd-ic','icon-size':1,'icon-allow-overlap':false,'text-field':['get','name'],'text-font':font(),'text-size':12,'text-anchor':'left','text-offset':[1.2,0],'text-max-width':8,'text-optional':true},
-    paint:{'text-color':sat?'#ffffff':'#c5221f','text-halo-color':sat?'#000000':'#ffffff','text-halo-width':1.6}})}
- }catch(e){console.warn('places layer',e)}}
- m.on('style.load',add);
- if(m.isStyleLoaded())add();else m.once('load',add);
- m.on('click','bnd-places',e=>{const f=e.features&&e.features[0];if(!f)return;
-  try{if(BND.pop)BND.pop.remove();BND.pop=new maplibregl.Popup({offset:14,closeButton:false}).setLngLat(f.geometry.coordinates).setText(f.properties.name).addTo(m)}catch(x){toast(f.properties.name)}});
- m.on('mouseenter','bnd-places',()=>{m.getCanvas().style.cursor='pointer'});
- m.on('mouseleave','bnd-places',()=>{m.getCanvas().style.cursor=''})}
-BND.ready.then(()=>{let n=0;const t=setInterval(()=>{bndShow();if(BND.shown||EMB||++n>40)clearInterval(t)},500)});
 /* search: Bindura places first (e.g. "Piki", "Shashi"), then the existing sources */
 {const _s2=searchAll;searchAll=async function(v){
   const [base,list]=await Promise.all([_s2(v),BND.ready]),q=v.trim().toLowerCase();
