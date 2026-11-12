@@ -624,6 +624,7 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 /* ============ CONFIG ============
  Google Maps key: in Google Cloud Console enable "Maps JavaScript API", "Places API (New)",
@@ -2263,5 +2264,36 @@ async function osrmRoute(a,b){const hosts=['https://router.project-osrm.org','ht
   const loc=q.length>=2?PASS.filter(t=>t[0].toLowerCase().startsWith(q)).map(t=>({lat:t[1],lng:t[2],name:t[0],sub:'Zimbabwe'})):[];
   const seen=new Set(loc.map(x=>x.name.toLowerCase()));return loc.concat(base.filter(x=>!seen.has(String(x.name).toLowerCase()))).slice(0,14)}}
 if(window.ZG_OPEN){trafficToggle=function(){toast('Live traffic is not available on the free map.')};const tb=document.getElementById('trb');tb&&(tb.style.display='none')}
+
+/* ============ BINDURA PLACES (Realtime Database /places) ============ */
+const BND={list:[],ready:null,shown:false,pop:null};
+BND.ready=new Promise(res=>{
+ try{
+  firebase.database().ref('places').once('value',snap=>{
+   snap.forEach(ch=>{const p=ch.val();
+    if(p&&p.name&&isFinite(+p.lat)&&isFinite(+p.lng))BND.list.push({name:String(p.name),lat:+p.lat,lng:+p.lng})});
+   res(BND.list)},
+   err=>{console.warn('places load failed',err&&err.message);res([])})
+ }catch(e){console.warn('places load failed',e);res([])}
+});
+function bndShow(){
+ if(BND.shown||EMB||!window.google||!map||!map.m||!BND.list.length)return;BND.shown=true;
+ const dot={fillColor:'#e5353b',scale:5,strokeColor:'#fff',strokeWeight:2};
+ BND.list.forEach(p=>{
+  const m=new google.maps.Marker({map,position:{lat:p.lat,lng:p.lng},title:p.name,icon:dot,zIndex:2});
+  m.addListener('click',()=>{
+   try{if(BND.pop)BND.pop.remove();
+    BND.pop=new maplibregl.Popup({offset:12,closeButton:false}).setLngLat([p.lng,p.lat]).setText(p.name).addTo(map.m)}
+   catch(e){toast(p.name)}})})}
+BND.ready.then(()=>{let n=0;const t=setInterval(()=>{bndShow();if(BND.shown||EMB||++n>40)clearInterval(t)},500)});
+/* search: Bindura places first (e.g. "Piki", "Shashi"), then the existing sources */
+{const _s2=searchAll;searchAll=async function(v){
+  const [base,list]=await Promise.all([_s2(v),BND.ready]),q=v.trim().toLowerCase();
+  if(q.length<2)return base;
+  const hit=list.filter(p=>p.name.toLowerCase().includes(q))
+   .sort((a,b)=>(b.name.toLowerCase().startsWith(q))-(a.name.toLowerCase().startsWith(q))||a.name.localeCompare(b.name))
+   .map(p=>({lat:p.lat,lng:p.lng,name:p.name,sub:'Bindura'}));
+  const seen=new Set(hit.map(x=>x.name.toLowerCase()));
+  return hit.concat(base.filter(x=>!seen.has(String(x.name).toLowerCase()))).slice(0,14)}}
 </script>
 </body></html>
