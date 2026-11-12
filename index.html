@@ -131,6 +131,15 @@ service cloud.firestore{
      &&request.resource.data.d.diff(resource.data.d).affectedKeys().hasOnly([request.auth.uid]);
   }
 
+  // NEW: places added by ZimGo users (anyone signed in can read; each user can add and remove their own)
+  match /places/{p}{
+   allow read:if signedIn();
+   allow create:if signedIn()&&request.resource.data.by==request.auth.uid
+     &&request.resource.data.name is string&&request.resource.data.name.size()<=80
+     &&request.resource.data.lat is number&&request.resource.data.lng is number;
+   allow delete:if signedIn()&&(resource.data.by==request.auth.uid||isAdmin());
+  }
+
   // support messages ("staff")
   match /support/{t}{
    allow create:if signedIn()&&request.resource.data.uid==request.auth.uid;
@@ -624,7 +633,6 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 /* ============ CONFIG ============
  Google Maps key: in Google Cloud Console enable "Maps JavaScript API", "Places API (New)",
@@ -2113,7 +2121,7 @@ async function runSearch(v){const id=++_qs;$('#sres').innerHTML='<p class="m" st
  if(id!==_qs)return;sres=list;const sd=Object.entries(_sd).filter(([k,x])=>typeof x==='string').map(([k,x])=>k+': '+x).join(' · ');
  $('#sres').innerHTML=(note?`<p class="m" style="padding:6px 16px">${note}</p>`:'')+list.map((s,i)=>`<div class="rec" onclick="pickS(${i})">${IC_PIN}<div>${esc(s.name)}<small>${esc(s.sub)}</small></div></div>`).join('')
  +(sf==='ds'?`<div class="rec" onclick="chooseOnMap()">${IC_PIN}<div>Choose on map<small>${list.length?'Not it? Drop a pin anywhere':'Could not find “'+esc(v)+'”. Drop a pin exactly where you want'}</small></div></div>`:(list.length?'':'<p class="m" style="padding:14px">Try another spelling or a nearby landmark.</p>'))
- +(list.length||!sd?'':`<p class="m" style="padding:6px 16px;font-size:11px;opacity:.55">Search sources unavailable: ${esc(sd)}</p>`)}
+ +(sf==='ds'&&v.length>=3?`<div class="rec" data-n="${esc(v)}" onclick="addPlaceFlow(this.dataset.n)">${IC_PIN}<div>Add “${esc(v)}” to ZimGo<small>Drop a pin so everyone can find this place</small></div></div>`:'')+(list.length||!sd?'':`<p class="m" style="padding:6px 16px;font-size:11px;opacity:.55">Search sources unavailable: ${esc(sd)}</p>`)}
 
 /* ============ bottom sheet: drag the handle down to peek at the map, up (or tap) to bring it back ============ */
 function sheetDrag(SH,env){const PEEK=84;let on=false,y0=0,off0=0,moved=0,t0=0,lastY=0,hTap=false;
@@ -2265,25 +2273,47 @@ async function osrmRoute(a,b){const hosts=['https://router.project-osrm.org','ht
   const seen=new Set(loc.map(x=>x.name.toLowerCase()));return loc.concat(base.filter(x=>!seen.has(String(x.name).toLowerCase()))).slice(0,14)}}
 if(window.ZG_OPEN){trafficToggle=function(){toast('Live traffic is not available on the free map.')};const tb=document.getElementById('trb');tb&&(tb.style.display='none')}
 
-/* ============ BINDURA PLACES (Realtime Database /places) ============ */
-const BND={list:[],ready:null};
-BND.ready=new Promise(res=>{
- try{
-  firebase.database().ref('places').once('value',snap=>{
-   snap.forEach(ch=>{const p=ch.val();
-    if(p&&p.name&&isFinite(+p.lat)&&isFinite(+p.lng))BND.list.push({name:String(p.name),lat:+p.lat,lng:+p.lng})});
-   res(BND.list)},
-   err=>{console.warn('places load failed',err&&err.message);res([])})
- }catch(e){console.warn('places load failed',e);res([])}
-});
-/* search: Bindura places first (e.g. "Piki", "Shashi"), then the existing sources */
-{const _s2=searchAll;searchAll=async function(v){
-  const [base,list]=await Promise.all([_s2(v),BND.ready]),q=v.trim().toLowerCase();
-  if(q.length<2)return base;
-  const hit=list.filter(p=>p.name.toLowerCase().includes(q))
-   .sort((a,b)=>(b.name.toLowerCase().startsWith(q))-(a.name.toLowerCase().startsWith(q))||a.name.localeCompare(b.name))
-   .map(p=>({lat:p.lat,lng:p.lng,name:p.name,sub:'Bindura'}));
-  const seen=new Set(hit.map(x=>x.name.toLowerCase()));
-  return hit.concat(base.filter(x=>!seen.has(String(x.name).toLowerCase()))).slice(0,14)}}
+/* Built-in places shown on the map and in search for everyone. Add one per line: ["Place name", latitude, longitude] */
+window.ZG_SEED=window.ZG_SEED||[
+];
+function s_seed(v){const ts=v.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!ts.length||v.trim().length<2)return[];return(window.ZG_SEED||[]).filter(p=>ts.every(t=>p[0].toLowerCase().includes(t))).map(p=>({lat:p[1],lng:p[2],name:p[0],sub:'ZimGo place'}))}
+/* ============ MORE PLACES: deep search of OpenStreetMap, places on the map, and ZimGo community places ============ */
+const _OV=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+async function ovq(ql){for(const h of _OV){try{const r=await fetch(h,{method:'POST',body:'data='+encodeURIComponent(ql),headers:{'Content-Type':'application/x-www-form-urlencoded'}});if(!r.ok)continue;return(await r.json()).elements||[]}catch(e){}}throw new Error('overpass')}
+const ovLL=e=>({lat:e.lat!=null?e.lat:(e.center&&e.center.lat),lng:e.lon!=null?e.lon:(e.center&&e.center.lon)});
+async function s_over(v,c,wide){const ws=v.toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w.length>=3);if(!ws.length)return[];const w=[...ws].sort((a,b)=>b.length-a.length)[0];
+ const sel=wide?'(area.z)':`(around:40000,${c.lat.toFixed(4)},${c.lng.toFixed(4)})`;
+ const ql=`[out:json][timeout:12];${wide?'area["ISO3166-1"="ZW"][admin_level=2]->.z;':''}nwr["name"~"${w}",i]${sel};out center 40;`;
+ return(await ovq(ql)).map(e=>{const t=e.tags||{},p=ovLL(e);return{lat:p.lat,lng:p.lng,name:t.name||'',sub:[t['addr:suburb']||t['addr:city']||'',t.amenity||t.shop||t.healthcare||t.tourism||t.place||t.highway||''].filter(Boolean).join(' · ')||'Zimbabwe',_ok:ws.every(x=>(t.name||'').toLowerCase().includes(x))}}).filter(x=>x.name&&x.lat!=null&&x._ok).slice(0,20)}
+/* places added by ZimGo users */
+async function s_comm(v){const q=v.trim().toLowerCase();if(q.length<2)return[];const col=db.collection('places'),ts=q.split(/\s+/),w=[...ts].sort((a,b)=>b.length-a.length)[0];
+ const[a,b]=await Promise.all([col.where('nl','>=',q).where('nl','<=',q+'\uf8ff').limit(8).get(),col.where('kw','array-contains',w).limit(12).get()]),m=new Map();
+ [...a.docs,...b.docs].forEach(d=>{const x=d.data();if(ts.every(t=>(x.nl||'').includes(t)))m.set(d.id,{lat:x.lat,lng:x.lng,name:x.name,sub:'Added by ZimGo users'})});return[...m.values()]}
+function addPlaceFlow(n){window._addName=n;try{chooseOnMap()}catch(e){toast('Open the map and drop a pin where this place is.')}}
+async function savePlace(name,ll){try{const nl=name.trim().toLowerCase(),kw=[...new Set(nl.split(/\s+/).filter(w=>w.length>=2))];
+ await db.collection('places').add({name:name.trim().slice(0,80),nl,kw,lat:ll.lat,lng:ll.lng,by:me.uid,t:Date.now()});_cm.push({name:name.trim(),lat:ll.lat,lng:ll.lng});poiRefresh();toast('Thanks! ZimGo now knows '+name.trim())}catch(e){toast('Could not save that place.')}}
+{const _cp=confPick;confPick=function(){const n=window._addName;if(n){window._addName=null;let ll=window._pd;if(!ll){const c=map.getCenter();ll={lat:c.lat(),lng:c.lng()}}savePlace(n,ll);window._pdn=n}return _cp()}}
+{const _sa3=searchAll;searchAll=async function(v){const c=_ctr(),cap=(n,f,ms)=>Promise.race([Promise.resolve().then(f).catch(e=>{try{_sd[n]=String((e&&e.message)||e).slice(0,40)}catch(x){}return[]}),new Promise(r=>setTimeout(()=>r([]),ms))]);
+ const[base,o1,o2,cm]=await Promise.all([_sa3(v),cap('overpass',()=>s_over(v,c,0),6000),cap('overpassZW',()=>s_over(v,c,1),6500),cap('community',()=>s_comm(v),4000)]),seen=new Set(),out=[];
+ const add=x=>{if(!x)return;const k=(x.name+'|'+String(x.sub||'').split(',')[0]).toLowerCase();if(seen.has(k))return;seen.add(k);out.push(x)};
+ s_seed(v).forEach(add);cm.forEach(add);const L=[base,o1,o2];for(let i=0;out.length<18&&L.some(a=>i<a.length);i++)L.forEach(a=>add(a[i]));return out}}
+/* named places drawn on the map (hospitals, schools, shops, bus stops...) + community places */
+let _cm=[];const _pf=new Map(),_ptile=new Set();let _pm=null;
+const poiKind=t=>/^(hospital|clinic|doctors|pharmacy|dentist)$/.test(t.amenity||'')||t.healthcare?'health':/^(school|college|university|kindergarten)$/.test(t.amenity||'')?'edu':t.shop?'shop':/^(restaurant|cafe|fast_food|bar|pub|food_court)$/.test(t.amenity||'')?'food':'other';
+const poiFC=()=>{const f=[..._pf.values()];(window.ZG_SEED||[]).forEach(p=>f.push({type:'Feature',geometry:{type:'Point',coordinates:[p[2],p[1]]},properties:{name:p[0],kind:'zg'}}));_cm.forEach(p=>f.push({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:p.name,kind:'zg'}}));return{type:'FeatureCollection',features:f}};
+function poiRefresh(){try{const s=_pm&&_pm.getSource('zgp');s&&s.setData(poiFC())}catch(e){}}
+function poiLayers(){const m=_pm;if(!m)return;try{if(!m.getSource('zgp'))m.addSource('zgp',{type:'geojson',data:poiFC()});
+ if(!m.getLayer('zgp-c'))m.addLayer({id:'zgp-c',type:'circle',source:'zgp',minzoom:14.5,paint:{'circle-radius':['case',['==',['get','kind'],'zg'],7,4.5],'circle-color':['match',['get','kind'],'zg','#18a957','health','#e53935','edu','#1e6fe8','shop','#f08c00','food','#b23fd1','#5f6b7a'],'circle-stroke-color':'#ffffff','circle-stroke-width':1.6}});
+ if(!m.getLayer('zgp-t'))m.addLayer({id:'zgp-t',type:'symbol',source:'zgp',minzoom:15.5,layout:{'text-field':['get','name'],'text-font':['Noto Sans Regular'],'text-size':11.5,'text-offset':[0,.9],'text-anchor':'top','text-optional':true,'text-max-width':8},paint:{'text-color':'#222222','text-halo-color':'#ffffff','text-halo-width':1.4}})}catch(e){}}
+async function poiLoad(){const m=_pm;if(!m||m.getZoom()<14.5)return;const b=m.getBounds(),n=16384,tx=g=>Math.floor((g+180)/360*n),ty=a=>Math.floor((1-Math.log(Math.tan(a*Math.PI/180)+1/Math.cos(a*Math.PI/180))/Math.PI)/2*n),need=[];
+ for(let x=tx(b.getWest());x<=tx(b.getEast())&&need.length<6;x++)for(let y=ty(b.getNorth());y<=ty(b.getSouth())&&need.length<6;y++){const k=x+'/'+y;if(!_ptile.has(k)){_ptile.add(k);need.push([x,y,k])}}
+ for(const[x,y,k]of need){const w=x/n*360-180,e=(x+1)/n*360-180,la=a=>Math.atan(Math.sinh(Math.PI*(1-2*a/n)))*180/Math.PI,N=la(y),S=la(y+1),bb=`${S},${w},${N},${e}`;
+  try{const el=await ovq(`[out:json][timeout:20];(${['amenity','shop','healthcare','tourism','office','leisure','public_transport'].map(t=>`nwr["name"]["${t}"](${bb});`).join('')});out center 400;`);
+   el.forEach(e2=>{const t=e2.tags||{},p=ovLL(e2);if(t.name&&p.lat!=null)_pf.set(e2.type+e2.id,{type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:t.name,kind:poiKind(t)}})});poiRefresh()}catch(e3){_ptile.delete(k)}}}
+async function commLoad(){try{const q=await db.collection('places').limit(500).get();_cm=q.docs.map(d=>d.data());poiRefresh()}catch(e){}}
+if(window.ZG_OPEN){mapReady.then(()=>{if(!map||!map.m)return;_pm=map.m;const go=()=>{poiLayers();poiLoad();commLoad()};_pm.on('style.load',poiLayers);_pm.on('moveend',poiLoad);if(_pm.isStyleLoaded())go();else _pm.once('load',go);setInterval(commLoad,300000);
+ _pm.on('click',['zgp-c','zgp-t'],e=>{const f=e.features&&e.features[0];if(!f||typeof me==='undefined'||!me||me.role==='driver'||ride||stage!=='idle')return;const p=f.properties;window._poi={ll:{lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]},nm:p.name};
+  $('#mdp').innerHTML=`<h3>${esc(p.name)}</h3><p class="m">${p.kind==='zg'?'Added by ZimGo users':'Place on the map'}</p><button class="btn" onclick="mdClose(null);setDrop(_poi.ll,_poi.nm)">Go here</button><button class="lnk" style="color:var(--mut)" onclick="mdClose(null)">Cancel</button>`;$('#md').hidden=false});
+ _pm.on('mouseenter',['zgp-c','zgp-t'],()=>{_pm.getCanvas().style.cursor='pointer'});_pm.on('mouseleave',['zgp-c','zgp-t'],()=>{_pm.getCanvas().style.cursor=''})})}
 </script>
 </body></html>
