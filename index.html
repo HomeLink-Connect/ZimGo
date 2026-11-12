@@ -18,43 +18,67 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <!-- FIRESTORE RULES: paste in Firebase console > Firestore Database > Rules > Publish
 rules_version='2';
-service cloud.firestore{match /databases/{d}/documents{
- function signedIn(){return request.auth!=null}
- function isAdmin(){return signedIn()&&get(/databases/$(d)/documents/users/$(request.auth.uid)).data.get('admin',false)==true}
- function inRide(r){return signedIn()&&(get(/databases/$(d)/documents/rides/$(r)).data.pax==request.auth.uid||get(/databases/$(d)/documents/rides/$(r)).data.driver==request.auth.uid)}
- function verifiedDriver(){return get(/databases/$(d)/documents/users/$(request.auth.uid)).data.get('dstatus','legacy') in ['verified','legacy']}
- match /presence/{p}{
-  allow read:if signedIn();
-  allow write:if signedIn()&&request.resource.data.keys().hasOnly(['d']);
- }
- match /users/{u}{
-  allow read:if signedIn();
-  allow create:if request.auth.uid==u&&!('admin' in request.resource.data);
-  allow update:if (request.auth.uid==u
+service cloud.firestore{
+ match /databases/{d}/documents{
+  function signedIn(){return request.auth!=null}
+  function isAdmin(){return signedIn()&&get(/databases/$(d)/documents/users/$(request.auth.uid)).data.get('admin',false)==true}
+  function verifiedDriver(){return get(/databases/$(d)/documents/users/$(request.auth.uid)).data.get('dstatus','legacy') in ['verified','legacy']}
+
+  // who may use a ride's chat and calls
+  function inRide(r){return signedIn()&&(
+    get(/databases/$(d)/documents/rides/$(r)).data.pax==request.auth.uid
+    ||get(/databases/$(d)/documents/rides/$(r)).data.get('driver','')==request.auth.uid
+    ||exists(/databases/$(d)/documents/rides/$(r)/offers/$(request.auth.uid)))}
+
+  match /users/{u}{
+   allow read:if signedIn();
+   allow create:if request.auth.uid==u&&!('admin' in request.resource.data);
+   allow update:if (request.auth.uid==u
       &&!request.resource.data.diff(resource.data).affectedKeys().hasAny(['admin','dreviewed'])
       &&(!request.resource.data.diff(resource.data).affectedKeys().hasAny(['dstatus'])||request.resource.data.dstatus in ['pending','none']))
      ||isAdmin();
-  allow delete:if request.auth.uid==u;
-  match /docs/{k}{allow read:if request.auth.uid==u||isAdmin();allow write:if request.auth.uid==u;}
- }
- match /rides/{r}{
-  allow read:if signedIn();
-  allow create:if request.auth.uid==request.resource.data.pax;
-  allow update:if signedIn()&&(request.auth.uid==resource.data.pax||request.auth.uid==resource.data.driver||resource.data.status=='open');
-  match /offers/{o}{allow read:if signedIn();allow write:if request.auth.uid==o&&verifiedDriver();}
-  match /msgs/{m}{
-   allow read:if inRide(r);
-   allow create:if inRide(r)&&request.resource.data.from==request.auth.uid;
-   allow update:if inRide(r)&&resource.data.from!=request.auth.uid&&request.resource.data.diff(resource.data).affectedKeys().hasOnly(['del','read']);
-   allow delete:if inRide(r);
+   allow delete:if request.auth.uid==u;
+   match /docs/{k}{allow read:if request.auth.uid==u||isAdmin();allow write:if request.auth.uid==u;}
   }
-  match /calls/{c}{
-   allow read,create,update:if inRide(r);
-   match /ice/{i}{allow read,create:if inRide(r);}
+
+  match /rides/{r}{
+   allow read:if signedIn();
+   allow create:if request.auth.uid==request.resource.data.pax;
+   allow update:if signedIn()&&(request.auth.uid==resource.data.pax||request.auth.uid==resource.data.driver||resource.data.status=='open');
+   match /offers/{o}{allow read:if signedIn();allow write:if request.auth.uid==o&&verifiedDriver();}
+
+   // chat messages (kept 5 days: the app deletes older ones, and a TTL policy on "expireAt" can do it automatically)
+   match /msgs/{m}{
+    allow read:if inRide(r);
+    allow create:if inRide(r)&&request.resource.data.from==request.auth.uid;
+    allow update:if inRide(r)&&resource.data.from!=request.auth.uid&&request.resource.data.diff(resource.data).affectedKeys().hasOnly(['del','read']);
+    allow delete:if inRide(r);   // NEW: lets the app remove messages older than 5 days
+   }
+   // voice calls
+   match /calls/{c}{
+    allow read,create,update:if inRide(r);
+    match /ice/{i}{allow read,create:if inRide(r);}
+   }
+  }
+
+  // NEW: live cars. Online drivers share their position in one shared document (presence/all),
+  // each driver may only add, change or remove their own entry (the key equals their uid).
+  match /presence/{p}{
+   allow read:if signedIn();
+   allow create:if signedIn()&&request.resource.data.keys().hasOnly(['d'])
+     &&request.resource.data.d.keys().hasOnly([request.auth.uid]);
+   allow update:if signedIn()&&request.resource.data.keys().hasOnly(['d'])
+     &&request.resource.data.d.diff(resource.data.d).affectedKeys().hasOnly([request.auth.uid]);
+  }
+
+  // support messages ("staff")
+  match /support/{t}{
+   allow create:if signedIn()&&request.resource.data.uid==request.auth.uid;
+   allow read,update:if signedIn()&&(resource.data.uid==request.auth.uid||isAdmin());
   }
  }
-}}
-To make yourself an admin (so you can approve drivers): Firebase console > Firestore > users > your document > add field  admin  (boolean) = true
+}
+
 -->
 <style>
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -684,7 +708,7 @@ if(window.__gm)window.initMap();else if(window.__gmerr)useEmbed();
 setTimeout(()=>{if(!map)useEmbed()},8000);
 /* Keyless Google Maps embed (same method as the school website). Used automatically when the Maps JS API key/APIs are not working. */
 function embShow(u){if(emb.url===u)return;emb.url=u;$('#emb').src=u}
-function embCenter(ll){const la=+(typeof ll.lat==='function'?ll.lat():ll.lat),ln=+(typeof ll.lng==='function'?ll.lng():ll.lng);if(!isFinite(la)||!isFinite(ln))return;emb.c={lat:la,lng:ln};embShow(`https://www.google.com/maps?q=${la},${ln}&z=${emb.z||16}${emb.t?'&t='+emb.t:''}&output=embed`)}
+function embCenter(ll){const la=+(typeof ll.lat==='function'?ll.lat():ll.lat),ln=+(typeof ll.lng==='function'?ll.lng():ll.lng);if(!isFinite(la)||!isFinite(ln))return;emb.c={lat:la,lng:ln};embShow(embUrl({lat:la,lng:ln}))}
 function useEmbed(){
  if(EMB)return;EMB=true;document.body.classList.add('emb');
  for(const k in M){try{M[k].setMap(null)}catch(e){}delete M[k]}
@@ -2047,7 +2071,7 @@ function sheetDrag(SH,env){const PEEK=84;let on=false,y0=0,off0=0,moved=0,t0=0,l
 {const SH=document.getElementById('sheet');if(SH)sheetDrag(SH,window)}
 
 /* ============ one-finger zoom: buttons, double-tap, and double-tap-then-drag ============ */
-function zoomBy(d){if(typeof m3!=='undefined'&&m3&&!$('#m3d').hidden){m3.easeTo({zoom:m3.getZoom()+d,duration:250});return}if(EMB){emb.z=Math.max(3,Math.min(20,(emb.z||16)+d));const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z}${emb.t?'&t='+emb.t:''}&output=embed`);return}
+function zoomBy(d){if(typeof m3!=='undefined'&&m3&&!$('#m3d').hidden){m3.easeTo({zoom:m3.getZoom()+d,duration:250});return}if(EMB){emb.z=Math.max(3,Math.min(20,(emb.z||16)+d));const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(embUrl(c));return}
  if(map&&map.getZoom)map.setZoom(Math.max(3,Math.min(20,Math.round(map.getZoom())+d)))}
 {const z=document.getElementById('zm'),sh=document.getElementById('sheet'),lc=document.getElementById('loc');
  const place=()=>{if(!z)return;z.hidden=!!(lc&&lc.hidden);const t=sh?sh.getBoundingClientRect().top:innerHeight*.6;z.style.bottom=Math.max(14,innerHeight-t+14)+'px'};
@@ -2061,7 +2085,7 @@ function zoomBy(d){if(typeof m3!=='undefined'&&m3&&!$('#m3d').hidden){m3.easeTo(
 /* ============ sharpest map: satellite (hybrid) toggle, deep zoom, optional vector Map ID ============ */
 function zgDark(){try{const h=(getComputedStyle(document.documentElement).getPropertyValue('--bg0')||'#000').trim().replace('#','');const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16);return(((n>>16)&255)*.3+((n>>8)&255)*.59+(n&255)*.11)<110}catch(e){return false}}
 function applyLayer(hy){const b=document.getElementById('ml');b&&b.classList.toggle('on',!!hy);
- if(EMB){emb.t=hy?'h':'';const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(`https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z||16}${emb.t?'&t='+emb.t:''}&output=embed`);return}
+ if(EMB){emb.t=hy?'h':'';const c=emb.c||{lat:-17.8292,lng:31.0522};embShow(embUrl(c));return}
  if(!map||!map.setMapTypeId)return;map.setMapTypeId(hy?'hybrid':'roadmap');try{map.setTilt(hy&&map.getZoom()>=17?45:0)}catch(e){}}
 function mapLayer(){const hy=localStorage.zg_hy==='1'?0:1;try{localStorage.zg_hy=hy?'1':'0'}catch(e){}applyLayer(hy);toast(hy?'Satellite view':'Map view')}
 mapReady.then(()=>{if(localStorage.zg_hy==='1')applyLayer(1);if(map&&map.addListener)map.addListener('zoom_changed',()=>{try{if(map.getMapTypeId()==='hybrid')map.setTilt(map.getZoom()>=17?45:0)}catch(e){}})});
@@ -2128,16 +2152,24 @@ function zmToggle(){const b=document.getElementById('zmi');b.hidden=!b.hidden;do
 
 /* ============ IMMERSIVE MAP: follow me, trip preview fly-through, traffic, cinematic fly-in ============ */
 let _fol=false,_fw=null,_lv=null,_lc=null,_trf=null,_trOn=false,_pv=null;
-function followToggle(){if(EMB||!map||!window.google)return toast('Follow mode needs the Google map.');
- _fol=!_fol;document.getElementById('fmb').classList.toggle('on',_fol);
- if(_fol){if(!navigator.geolocation){_fol=false;return toast('Location is not available.')}toast('Following you');
+function embUrl(c){return `https://www.google.com/maps?q=${c.lat},${c.lng}&z=${emb.z||16}${emb.t?'&t='+emb.t:''}${emb.tr?'&layer=t':''}&output=embed`}
+function followToggle(){const b=document.getElementById('fmb');
+ if(!navigator.geolocation)return toast('Location is not available.');
+ if(EMB||!map||!window.google||!google.maps){ /* fallback map: re-centre it on you as you move */
+  _fol=!_fol;b.classList.toggle('on',_fol);
+  if(_fol){toast('Following you');let last=0,lp=null;_fw=navigator.geolocation.watchPosition(p=>{const ll={lat:p.coords.latitude,lng:p.coords.longitude},n=Date.now();if(n-last<6000||(lp&&kmB(lp.lat,lp.lng,ll.lat,ll.lng)<.03))return;last=n;lp=ll;embCenter(ll)},()=>toast('Could not get your live location.'),{enableHighAccuracy:true,maximumAge:3000,timeout:20000})}
+  else{if(_fw!=null)navigator.geolocation.clearWatch(_fw);_fw=null;toast('Follow mode off')}return}
+ _fol=!_fol;b.classList.toggle('on',_fol);
+ if(_fol){toast('Following you');
   _fw=navigator.geolocation.watchPosition(p=>{const ll={lat:p.coords.latitude,lng:p.coords.longitude};
    if(!_lv){_lv=new google.maps.Marker({map,position:ll,clickable:false,zIndex:99,icon:{path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#2f7bff',fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});_lc=new google.maps.Circle({map,center:ll,radius:p.coords.accuracy,fillColor:'#2f7bff',fillOpacity:.14,strokeOpacity:0,clickable:false})}
    else{_lv.setPosition(ll);_lc.setCenter(ll);_lc.setRadius(Math.min(p.coords.accuracy,300))}
    if(_fol){map.panTo(ll);if(map.getZoom()<16)map.setZoom(17)}},()=>toast('Could not get your live location.'),{enableHighAccuracy:true,maximumAge:3000,timeout:20000})}
  else{if(_fw!=null)navigator.geolocation.clearWatch(_fw);_fw=null;_lv&&_lv.setMap(null);_lc&&_lc.setMap(null);_lv=_lc=null;toast('Follow mode off')}}
-function trafficToggle(){if(EMB||!map||!window.google||!google.maps.TrafficLayer)return toast('Traffic needs the Google map.');
- _trf=_trf||new google.maps.TrafficLayer();_trOn=!_trOn;_trf.setMap(_trOn?map:null);document.getElementById('trb').classList.toggle('on',_trOn);toast(_trOn?'Live traffic on':'Traffic off')}
+function trafficToggle(){const b=document.getElementById('trb');
+ if(EMB||!map||!window.google||!google.maps||!google.maps.TrafficLayer){ /* fallback map: ask Google for its traffic layer */
+  _trOn=!_trOn;b.classList.toggle('on',_trOn);emb.tr=_trOn;const c=emb.c||(typeof here!=='undefined'&&here&&here.lat!=null?{lat:here.lat,lng:here.lng}:{lat:-17.8292,lng:31.0522});embShow(embUrl(c));toast(_trOn?'Live traffic on':'Traffic off');return}
+ _trf=_trf||new google.maps.TrafficLayer();_trOn=!_trOn;_trf.setMap(_trOn?map:null);b.classList.toggle('on',_trOn);toast(_trOn?'Live traffic on':'Traffic off')}
 /* trip preview: a car drives your route while the camera follows it */
 function stopPreview(){if(!_pv)return;cancelAnimationFrame(_pv.raf);_pv.mk&&_pv.mk.setMap(null);try{map.setZoom(_pv.z);map.setCenter(_pv.c)}catch(e){}_pv=null;const b=document.getElementById('pvb');b&&(b.classList.remove('on'),b.innerHTML=`${ic('car',18)} Preview trip`)}
 function pvPoint(P,cum,d){let i=1;while(i<cum.length-1&&cum[i]<d)i++;const a=P[i-1],b=P[i],seg=cum[i]-cum[i-1]||1,t=Math.min(1,Math.max(0,(d-cum[i-1])/seg));return{lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t}}
@@ -2160,27 +2192,37 @@ mapReady.then(()=>{if(EMB||!map||!map.setZoom||sessionStorage.zg_fly)return;sess
 
 /* ============ LIVE CARS: drivers who are online share their position, passengers see every ZimGo car nearby ============ */
 document.body.insertAdjacentHTML('beforeend','<div id="nbc" class="nbc"></div>');
-let _pt=0,_pl=null,_was=false;
+let _pt=0,_pl=null,_was=false,_pwe='',_pwok=false;
 function pres(p){if(!(typeof me!=='undefined'&&me&&me.role==='driver'&&online))return;const now=Date.now(),ll={lat:p.coords.latitude,lng:p.coords.longitude},moved=_pl?kmB(_pl.lat,_pl.lng,ll.lat,ll.lng)*1000:999;
  if(now-_pt<20000||(moved<25&&now-_pt<60000))return;
  let h=p.coords.heading;if(h==null||isNaN(h)){h=0;if(_pl&&moved>8){const r=Math.PI/180,y=Math.sin((ll.lng-_pl.lng)*r)*Math.cos(ll.lat*r),x=Math.cos(_pl.lat*r)*Math.sin(ll.lat*r)-Math.sin(_pl.lat*r)*Math.cos(ll.lat*r)*Math.cos((ll.lng-_pl.lng)*r);h=(Math.atan2(y,x)/r+360)%360}}
- _pt=now;_pl=ll;_was=true;db.collection('presence').doc('all').set({d:{[me.uid]:{lat:ll.lat,lng:ll.lng,h:Math.round(h),car:me.car||'',t:now}}},{merge:true}).catch(()=>{})}
+ _pt=now;_pl=ll;_was=true;db.collection('presence').doc('all').set({d:{[me.uid]:{lat:ll.lat,lng:ll.lng,h:Math.round(h),car:me.car||'',t:now}}},{merge:true}).then(()=>{_pwok=true;_pwe=''}).catch(e=>{_pwok=false;_pwe=(e&&e.code)==='permission-denied'?'Firestore rules not published':((e&&e.code)||'error')})}
 {const g=navigator.geolocation;if(g&&g.watchPosition){const w=g.watchPosition.bind(g);g.watchPosition=(ok,er,o)=>w(p=>{try{pres(p)}catch(e){}ok(p)},er,o)}}
 setInterval(()=>{if(_was&&!(typeof me!=='undefined'&&me&&me.role==='driver'&&online)){_was=false;_pl=null;try{db.collection('presence').doc('all').update({['d.'+me.uid]:firebase.firestore.FieldValue.delete()}).catch(()=>{})}catch(e){}}},4000);
 /* passenger side */
-const _nd=new Map();
-function nearChip(h){const c=document.getElementById('nbc');if(!c)return;if(h){c.innerHTML=h;c.classList.add('on')}else c.classList.remove('on')}
-function clearNear(){_nd.forEach(m=>m.setMap(null));_nd.clear()}
-async function pollNear(){if(document.hidden||EMB||!window.google||!map||typeof me==='undefined'||!me||me.role==='driver')return;if(ride){clearNear();return}
- try{const d=(await db.collection('presence').doc('all').get()).data(),all=(d&&d.d)||{},c=(typeof here!=='undefined'&&here&&here.lat!=null)?here:{lat:-17.8292,lng:31.0522},now=Date.now(),seen=new Set();
-  Object.entries(all).forEach(([uid,v])=>{if(uid===me.uid||!v||now-v.t>75000||kmB(c.lat,c.lng,v.lat,v.lng)>25)return;seen.add(uid);const pos={lat:v.lat,lng:v.lng},ic=carI(v.h||0,v.car);let m=_nd.get(uid);
-   if(!m){m=new google.maps.Marker({map,position:pos,icon:ic,zIndex:5,title:v.car||'ZimGo car'});m.addListener('click',()=>toast(v.car?('ZimGo car: '+v.car):'ZimGo car nearby'));_nd.set(uid,m)}else{m.setPosition(pos);if(ic)m.setIcon(ic)}});
-  _nd.forEach((m,u)=>{if(!seen.has(u)){m.setMap(null);_nd.delete(u)}});vehChip(seen.size)}catch(e){}}
-/* the car you booked: colour, make and plate shown on the map */
-function vehChip(n){const c=document.getElementById('nbc');if(!c||typeof me==='undefined'||!me||me.role==='driver')return;
+const _nd=new Map();let _ndL=[],_perr='',_m3c=[];
+function nearChip(h,click){const c=document.getElementById('nbc');if(!c)return;if(h){c.innerHTML=h;c.classList.add('on');c.style.pointerEvents=click?'auto':'none';c.onclick=click?()=>showNear():null}else c.classList.remove('on')}
+function clearNear(){_nd.forEach(m=>m.setMap(null));_nd.clear();_ndL=[]}
+function m3cars(){_m3c.forEach(x=>x.remove());_m3c=[];if(typeof m3==='undefined'||!m3||typeof maplibregl==='undefined'||document.getElementById('m3d').hidden)return;
+ _ndL.forEach(v=>{const u=carSprite(v.h||0,carRGB(v.car));if(!u)return;const i=document.createElement('img');i.src=u;i.style.cssText='width:60px;height:60px;pointer-events:none';_m3c.push(new maplibregl.Marker({element:i}).setLngLat([v.lng,v.lat]).addTo(m3))})}
+{const _m3p=m3pins;m3pins=function(){_m3p();m3cars()}}
+async function pollNear(){if(document.hidden||typeof me==='undefined'||!me||me.role==='driver')return;if(ride){clearNear();m3cars();return}
+ try{const d=(await db.collection('presence').doc('all').get()).data(),all=(d&&d.d)||{},c=(typeof here!=='undefined'&&here&&here.lat!=null)?here:{lat:-17.8292,lng:31.0522},now=Date.now(),L=[];_perr='';
+  Object.entries(all).forEach(([uid,v])=>{if(uid===me.uid||!v||now-v.t>75000)return;const km=kmB(c.lat,c.lng,v.lat,v.lng);if(km<=25)L.push({uid,lat:v.lat,lng:v.lng,h:v.h||0,car:v.car||'',km,age:Math.round((now-v.t)/1000)})});
+  L.sort((x,y)=>x.km-y.km);_ndL=L;
+  if(!EMB&&window.google&&map){const seen=new Set();L.forEach(v=>{seen.add(v.uid);const pos={lat:v.lat,lng:v.lng},ic=carI(v.h,v.car);let m=_nd.get(v.uid);if(!m){m=new google.maps.Marker({map,position:pos,icon:ic,zIndex:5,title:v.car||'ZimGo car'});m.addListener('click',()=>showNear());_nd.set(v.uid,m)}else{m.setPosition(pos);if(ic)m.setIcon(ic)}});_nd.forEach((m,u)=>{if(!seen.has(u)){m.setMap(null);_nd.delete(u)}})}
+  m3cars();vehChip()}catch(e){_perr=(e&&e.code)==='permission-denied'?'Firestore rules not published':((e&&e.code)||'error');vehChip()}}
+function showNear(){pollNear();const L=_ndL;
+ const rows=L.length?L.map(v=>{const t=(v.car||'').toLowerCase(),k=Object.keys(CARCOL).find(x=>t.includes(x)),rgb=k?CARCOL[k]:null,css=k?(rgb?`rgb(${rgb.join()})`:'#f2c200'):'#888';
+  return`<div class="lr"><i style="width:16px;height:16px;border-radius:50%;background:${css};border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3);flex:none"></i><div class="lm"><b>${esc(v.car||'ZimGo car')}</b><small>${v.km.toFixed(1)} km away · updated ${v.age}s ago</small></div></div>`}).join(''):'<p class="m">No ZimGo cars online near you right now.</p>';
+ $('#mdp').innerHTML=`<h3>ZimGo cars near you</h3>${_perr?`<p class="m">Could not load cars: ${esc(_perr)}</p>`:''}${rows}<button class="btn" onclick="mdClose(null);open3D();setTimeout(()=>{m3&&m3.getPitch()>10&&m3pitch()},1300)">Show on map</button><button class="lnk" onclick="mdClose(null)">Close</button>`;$('#md').hidden=false}
+/* the car you booked: colour, make and plate shown on the map (drivers see whether they are visible) */
+function vehChip(){const c=document.getElementById('nbc');if(!c||typeof me==='undefined'||!me)return;
+ if(me.role==='driver'){if(online)nearChip(_pwe?`${ic('car',18)} Passengers cannot see you: ${esc(_pwe)}`:(_pwok?`${ic('car',18)} Visible to passengers`:''));else nearChip('');return}
  if(ride&&ride.driver&&!['open','done','cancelled'].includes(ride.status)){const t=(ride.driverCar||'').toLowerCase();let k=Object.keys(CARCOL).find(x=>t.includes(x)),rgb=k?CARCOL[k]:null,css=k?(rgb?`rgb(${rgb.join()})`:'#f2c200'):'';
-  nearChip(`${css?`<i style="background:${css}"></i>`:ic('car',18)}<b>${esc(ride.driverCar||'Your driver')}</b>${ride.driverPlate?`<span>${esc(ride.driverPlate)}</span>`:''}`)}
- else if(!ride&&n>0)nearChip(`${ic('car',18)}${n} ZimGo car${n>1?'s':''} nearby`);else nearChip('')}
-setInterval(()=>{try{vehChip(_nd.size)}catch(e){}},1500);setInterval(pollNear,20000);setTimeout(pollNear,4000);
+  nearChip(`${css?`<i style="background:${css}"></i>`:ic('car',18)}<b>${esc(ride.driverCar||'Your driver')}</b>${ride.driverPlate?`<span>${esc(ride.driverPlate)}</span>`:''}`);return}
+ if(_perr){nearChip(`${ic('car',18)} Nearby cars unavailable: ${esc(_perr)}`,1);return}
+ if(!ride&&_ndL.length)nearChip(`${ic('car',18)}${_ndL.length} ZimGo car${_ndL.length>1?'s':''} nearby<span>· ${_ndL[0].km.toFixed(1)} km</span>`,1);else nearChip('')}
+setInterval(()=>{try{vehChip()}catch(e){}},1500);setInterval(pollNear,20000);setTimeout(pollNear,4000);
 </script>
 </body></html>
