@@ -12,19 +12,27 @@
 <link rel="manifest" href="manifest.webmanifest">
 <script>
 window.ZG_ENGINE='open';/* 'open' = free map: no Google account, key or card needed.  Change to 'google' once a Google Maps key works. */
+window.ZG_HERE_KEY='';/* paste your HERE API key between the quotes: better base map and place search */
+window.ZG_ORS_KEY='';/* paste your OpenRouteService key: road routes */
 window.ZG_MAP_ID='';window.__gm=0;window.__gmcb=function(){window.__gm=1;window.initMap&&window.initMap()};
 window.zgShim=function(){var ML=window.maplibregl,lines=[],pid=0;
  function ll(p){return p&&typeof p.lat==='function'?{lat:p.lat(),lng:p.lng()}:p}
  function LatLng(a,b){this._a=a;this._b=b}LatLng.prototype.lat=function(){return this._a};LatLng.prototype.lng=function(){return this._b};LatLng.prototype.toJSON=function(){return{lat:this._a,lng:this._b}};
  function Size(w,h){this.width=w;this.height=h}function Point(x,y){this.x=x;this.y=y}
  function Bounds(){this.p=[]}Bounds.prototype.extend=function(q){this.p.push(ll(q));return this};
- var STREET='https://tiles.openfreemap.org/styles/liberty';
+ var STREET='https://tiles.openfreemap.org/styles/liberty',GL='https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
+ function hereStyle(kind){var K=window.ZG_HERE_KEY,u=function(r,st){return'https://maps.hereapi.com/v3/'+r+'/mc/{z}/{x}/{y}/png8?style='+st+'&size=512&apiKey='+K},src=function(r,st,a){var o={type:'raster',tiles:[u(r,st)],tileSize:512,maxzoom:20};if(a)o.attribution=a;return o};
+  if(kind==='sat')return{version:8,glyphs:GL,sources:{b:src('background','satellite.day','© HERE'),l:src('label','satellite.day')},layers:[{id:'b',type:'raster',source:'b'},{id:'l',type:'raster',source:'l'}]};
+  return{version:8,glyphs:GL,sources:{b:src('base',kind==='night'?'explore.night':'explore.day','© HERE')},layers:[{id:'b',type:'raster',source:'b'}]}}
+ function isDark(){try{return!!(window.zgDark&&zgDark())}catch(e){return false}}
  var SAT={version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},lab:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19}},layers:[{id:'sat',type:'raster',source:'sat'},{id:'lab',type:'raster',source:'lab'}]};
  function GMap(el,o){var c=(o&&o.center)||{lat:-17.8292,lng:31.0522};c=ll(c);this.el=el;this.sat=false;
-  this.m=new ML.Map({container:el,style:STREET,center:[c.lng,c.lat],zoom:((o&&o.zoom)||15)-1,maxZoom:21,minZoom:2,dragRotate:false,pitchWithRotate:false,attributionControl:{compact:true},fadeDuration:0});
+  this.m=new ML.Map({container:el,style:this.cur(),center:[c.lng,c.lat],zoom:((o&&o.zoom)||15)-1,maxZoom:21,minZoom:2,dragRotate:false,pitchWithRotate:false,attributionControl:{compact:true},fadeDuration:0});
   try{this.m.touchZoomRotate.disableRotation()}catch(e){}try{this.m.touchPitch.disable()}catch(e){}
   this.m.on('style.load',function(){lines.slice().forEach(function(l){l._add()})});this.th()}
- GMap.prototype.th=function(){var d=false;try{d=window.zgDark&&zgDark()}catch(e){}this.el.classList.toggle('zgdark',!!d&&!this.sat)};
+ GMap.prototype.cur=function(){var d=isDark();this.hk=d;if(window.ZG_HERE_KEY)return hereStyle(this.sat?'sat':(d?'night':'day'));return this.sat?SAT:STREET};
+ GMap.prototype.restyle=function(){this.m.setStyle(this.cur());this.th()};
+ GMap.prototype.th=function(){this.el.classList.toggle('zgdark',!window.ZG_HERE_KEY&&isDark()&&!this.sat)};
  GMap.prototype.setCenter=function(p){p=ll(p);this.m.jumpTo({center:[p.lng,p.lat]})};
  GMap.prototype.panTo=function(p){p=ll(p);this.m.easeTo({center:[p.lng,p.lat],duration:450})};
  GMap.prototype.setZoom=function(z){this.m.easeTo({zoom:z-1,duration:250})};
@@ -36,8 +44,8 @@ window.zgShim=function(){var ML=window.maplibregl,lines=[],pid=0;
  GMap.prototype.addListener=function(n,f){var m=this.m,ev=n,h;
   if(n==='dragend'){ev='moveend';h=function(e){if(e&&e.originalEvent)f()}}else if(n==='zoom_changed'){ev='zoomend';h=function(){f()}}else if(n==='click'){h=function(e){f({latLng:new LatLng(e.lngLat.lat,e.lngLat.lng)})}}else h=function(){f()};
   m.on(ev,h);return{remove:function(){m.off(ev,h)}}};
- GMap.prototype.setOptions=function(o){if(o&&'styles' in o)this.th()};
- GMap.prototype.setMapTypeId=function(t){var s=(t==='hybrid'||t==='satellite');if(s===this.sat)return;this.sat=s;this.m.setStyle(s?SAT:STREET);this.th()};
+ GMap.prototype.setOptions=function(o){if(o&&'styles' in o){if(window.ZG_HERE_KEY&&this.hk!==isDark())this.restyle();else this.th()}};
+ GMap.prototype.setMapTypeId=function(t){var s=(t==='hybrid'||t==='satellite');if(s===this.sat)return;this.sat=s;this.restyle()};
  GMap.prototype.getMapTypeId=function(){return this.sat?'hybrid':'roadmap'};
  GMap.prototype.setTilt=function(){};GMap.prototype.getTilt=function(){return 0};GMap.prototype.setHeading=function(){};GMap.prototype.getHeading=function(){return 0};GMap.prototype.set=function(){};
  function Marker(o){this.z=o.zIndex||0;this.map=null;this.pos=ll(o.position)||{lat:0,lng:0};this.el=document.createElement('div');if(o.title)this.el.title=o.title;this.setIcon(o.icon);if(o.map)this.setMap(o.map)}
@@ -2315,5 +2323,16 @@ if(window.ZG_OPEN){mapReady.then(()=>{if(!map||!map.m)return;_pm=map.m;const go=
  _pm.on('click',['zgp-c','zgp-t'],e=>{const f=e.features&&e.features[0];if(!f||typeof me==='undefined'||!me||me.role==='driver'||ride||stage!=='idle')return;const p=f.properties;window._poi={ll:{lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]},nm:p.name};
   $('#mdp').innerHTML=`<h3>${esc(p.name)}</h3><p class="m">${p.kind==='zg'?'Added by ZimGo users':'Place on the map'}</p><button class="btn" onclick="mdClose(null);setDrop(_poi.ll,_poi.nm)">Go here</button><button class="lnk" style="color:var(--mut)" onclick="mdClose(null)">Cancel</button>`;$('#md').hidden=false});
  _pm.on('mouseenter',['zgp-c','zgp-t'],()=>{_pm.getCanvas().style.cursor='pointer'});_pm.on('mouseleave',['zgp-c','zgp-t'],()=>{_pm.getCanvas().style.cursor=''})})}
+
+/* ============ HERE (places + addresses) and OpenRouteService (routes): switch on when the keys are pasted ============ */
+async function s_here(v,c){const K=window.ZG_HERE_KEY;if(!K)return[];const q=encodeURIComponent(v),at=`${c.lat},${c.lng}`,get=async u=>{const r=await fetch(u);if(!r.ok)throw new Error('HERE '+r.status);return(await r.json()).items||[]};
+ const[d,g]=await Promise.all([get(`https://discover.search.hereapi.com/v1/discover?at=${at}&q=${q}&in=countryCode:ZWE&limit=10&lang=en&apiKey=${K}`).catch(()=>[]),get(`https://geocode.search.hereapi.com/v1/geocode?q=${q}&in=countryCode:ZWE&limit=5&lang=en&apiKey=${K}`).catch(()=>[])]);
+ return[...d,...g].filter(i=>i.position).map(i=>{const a=i.address||{};return{lat:i.position.lat,lng:i.position.lng,name:i.title&&i.resultType!=='houseNumber'?i.title:(a.label||'').split(',')[0],sub:[a.district||a.city,a.county].filter((x,j,A)=>x&&A.indexOf(x)===j).join(', ')||a.label||'Zimbabwe'}}).filter(x=>x.name)}
+{const _sa4=searchAll;searchAll=async function(v){if(!window.ZG_HERE_KEY)return _sa4(v);const c=_ctr(),[base,hr]=await Promise.all([_sa4(v),Promise.race([s_here(v,c).catch(()=>[]),new Promise(r=>setTimeout(()=>r([]),5000))])]),seen=new Set(),out=[];
+  const add=x=>{if(!x)return;const k=(x.name+'|'+String(x.sub||'').split(',')[0]).toLowerCase();if(seen.has(k))return;seen.add(k);out.push(x)};
+  base.filter(x=>/ZimGo/.test(x.sub||'')).forEach(add);hr.forEach(add);base.forEach(add);return out.slice(0,18)}}
+{const _nr=nrev;nrev=async function(ll){const K=window.ZG_HERE_KEY;if(K){try{const j=await(await fetch(`https://revgeocode.search.hereapi.com/v1/revgeocode?at=${ll.lat},${ll.lng}&lang=en&limit=1&apiKey=${K}`)).json(),i=j.items&&j.items[0];if(i){const a=i.address||{},t=i.title&&i.resultType!=='houseNumber'?i.title:[a.street,a.district||a.city].filter(Boolean).join(', ');if(t)return t.split(',').slice(0,2).join(',')}}catch(e){}}return _nr(ll)}}
+{const _or=osrmRoute;osrmRoute=async function(a,b){const K=window.ZG_ORS_KEY;if(K){try{const r=await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Authorization':K,'Content-Type':'application/json'},body:JSON.stringify({coordinates:[[a.lng,a.lat],[b.lng,b.lat]]})});
+   if(r.ok){const j=await r.json(),f=j.features&&j.features[0];if(f)return{km:f.properties.summary.distance/1000,mins:Math.max(1,Math.round(f.properties.summary.duration/60)),path:f.geometry.coordinates.map(c=>({lat:c[1],lng:c[0]}))}}}catch(e){}}return _or(a,b)}}
 </script>
 </body></html>
