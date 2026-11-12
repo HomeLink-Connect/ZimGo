@@ -2278,13 +2278,18 @@ BND.ready=new Promise(res=>{
 });
 function bndShow(){
  if(BND.shown||EMB||!window.google||!map||!map.m||!BND.list.length)return;BND.shown=true;
- const dot={fillColor:'#e5353b',scale:5,strokeColor:'#fff',strokeWeight:2};
+ const els=[];
  BND.list.forEach(p=>{
-  const m=new google.maps.Marker({map,position:{lat:p.lat,lng:p.lng},title:p.name,icon:dot,zIndex:2});
+  const m=new google.maps.Marker({map,position:{lat:p.lat,lng:p.lng},title:p.name,zIndex:2});
+  const e=m.el;e.removeAttribute('style');e.innerHTML='';e.textContent=p.name;
+  e.style.cssText='font:700 11px/1.2 system-ui,sans-serif;color:#1a1a1a;white-space:nowrap;cursor:pointer;pointer-events:auto;z-index:2;text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff,0 0 4px #fff';
+  els.push(e);
   m.addListener('click',()=>{
    try{if(BND.pop)BND.pop.remove();
     BND.pop=new maplibregl.Popup({offset:12,closeButton:false}).setLngLat([p.lng,p.lat]).setText(p.name).addTo(map.m)}
-   catch(e){toast(p.name)}})})}
+   catch(x){toast(p.name)}})});
+ const vis=()=>{const on=map.m.getZoom()>=13;els.forEach(e=>{e.style.display=on?'':'none'})};
+ map.m.on('zoomend',vis);vis()}
 BND.ready.then(()=>{let n=0;const t=setInterval(()=>{bndShow();if(BND.shown||EMB||++n>40)clearInterval(t)},500)});
 /* search: Bindura places first (e.g. "Piki", "Shashi"), then the existing sources */
 {const _s2=searchAll;searchAll=async function(v){
