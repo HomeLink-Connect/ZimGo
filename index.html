@@ -533,6 +533,10 @@ button,.tab,.rec,.dli,.lr,.where,.spc,.chp{touch-action:manipulation}
 .c2o img{left:0;bottom:0;width:100%;height:calc(100% - 62px);object-fit:contain;object-position:center bottom}
 .rh{display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px;font:700 12.5px Inter,sans-serif;color:var(--mut)}.rh button{border:0;background:none;color:var(--accX);font:800 13px Inter,sans-serif;cursor:pointer;padding:6px}
 [data-ri]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.vspk{position:relative}.vspk.off{opacity:.6}.vspk.off::after{content:"";position:absolute;width:30px;height:3px;border-radius:2px;background:var(--tx);transform:rotate(-45deg)}
+.trp{top:calc(env(safe-area-inset-top,0px) + 68px);padding-bottom:15px;pointer-events:none}.trp .vspk{pointer-events:auto;width:30px;height:30px;border-radius:50%;border:0;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;flex:none}.trp .vspk .i{width:18px;height:18px}
+.trp .bar{position:absolute;left:16px;right:16px;bottom:5px;height:3px;border-radius:2px;background:rgba(128,128,128,.3);overflow:hidden}.trp .bar i{display:block;height:100%;background:var(--acc);transition:width 1s}.trp.warn{background:#c62828;color:#fff;border-color:#c62828}.trp.warn .vspk .i{fill:#fff}
+
 .zgdark .maplibregl-canvas{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.95)}
 #map .maplibregl-ctrl-bottom-right{bottom:6px}.maplibregl-ctrl-attrib{font-size:9px}.maplibregl-marker{will-change:transform}
 
@@ -596,7 +600,7 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
 <button id="menu" hidden onclick="openMenu()">☰</button>
 <div id="top" hidden></div>
 <div id="pin" hidden><div class="lbl"><small id="pl">Pickup point</small><b id="pn">…</b></div><div class="ic" id="pic"></div><div class="st"></div></div>
-<div id="zm" hidden><div id="zmi" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button><button type="button" id="fmb" aria-label="Follow me" onclick="followToggle()"><svg class="i" viewBox="0 0 24 24"><path d="M12 2l7 18-7-4-7 4z"/></svg></button><button type="button" id="trb" aria-label="Traffic" onclick="trafficToggle()"><svg class="i" viewBox="0 0 24 24"><path d="M9 2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm3 4a1.6 1.6 0 1 0 0 3.2A1.6 1.6 0 0 0 12 6zm0 4.7a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zm0 4.7a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/></svg></button></div><button type="button" id="zmt" aria-label="Map tools" onclick="zmToggle()"><svg class="i" viewBox="0 0 24 24" style="fill:none;stroke:var(--tx);stroke-width:2;stroke-linecap:round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg></button></div>
+<div id="zm" hidden><div id="zmi" hidden><button type="button" aria-label="Zoom in" onclick="zoomBy(1)"><svg class="i" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button type="button" aria-label="Zoom out" onclick="zoomBy(-1)"><svg class="i" viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></button><button type="button" id="ml" aria-label="Satellite view" onclick="mapLayer()"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zm-7.4 9.2L12 16.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9zm0 4L12 20.3l7.4-4.1 1.6.9-9 5-9-5 1.6-.9z"/></svg></button><button type="button" id="fmb" aria-label="Follow me" onclick="followToggle()"><svg class="i" viewBox="0 0 24 24"><path d="M12 2l7 18-7-4-7 4z"/></svg></button><button type="button" id="trb" aria-label="Traffic" onclick="trafficToggle()"><svg class="i" viewBox="0 0 24 24"><path d="M9 2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm3 4a1.6 1.6 0 1 0 0 3.2A1.6 1.6 0 0 0 12 6zm0 4.7a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zm0 4.7a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/></svg></button><button type="button" id="vcb" class="vspk" aria-label="Voice guidance" onclick="voiceToggle()"><svg class="i" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></button></div><button type="button" id="zmt" aria-label="Map tools" onclick="zmToggle()"><svg class="i" viewBox="0 0 24 24" style="fill:none;stroke:var(--tx);stroke-width:2;stroke-linecap:round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.4"/><circle cx="8" cy="17" r="2.4"/></svg></button></div>
 <button id="loc" hidden onclick="locate()"><svg class="i" viewBox="0 0 24 24" fill="#fff"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
 <div id="sheet"></div>
 <div id="srch" hidden>
@@ -2337,5 +2341,45 @@ async function s_here(v,c){const K=window.ZG_HERE_KEY;if(!K)return[];const q=enc
 
 /* drivers: keep the screen awake while online so the live position keeps flowing */
 {let wl=null;const want=()=>typeof me!=='undefined'&&me&&me.role==='driver'&&online,ask=async()=>{try{if(want()&&!wl&&navigator.wakeLock&&!document.hidden){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}else if(!want()&&wl){await wl.release();wl=null}}catch(e){wl=null}};setInterval(ask,5000);document.addEventListener('visibilitychange',ask)}
+
+/* ============ VOICE + TRIP COMPANION: "Safe journey", driver arriving, progress on the map, off-route alert ============ */
+let _vOn=localStorage.zg_voice!=='0',_vu=0;
+function voiceBtn(){document.querySelectorAll('.vspk').forEach(b=>{b.classList.toggle('off',!_vOn);b.setAttribute('aria-label',_vOn?'Voice on':'Voice off')})}
+function say(t){if(!_vOn||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t),V=speechSynthesis.getVoices();u.lang='en-GB';u.rate=.95;const v=V.find(x=>/^en[-_](GB|ZA|ZW|US)/i.test(x.lang)&&/female|google|samantha|serena|kate|karen/i.test(x.name))||V.find(x=>/^en/i.test(x.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function chime(){if(!_vOn)return;try{const C=window.AudioContext||window.webkitAudioContext,a=window._ac||(window._ac=new C());if(a.resume)a.resume();[[660,0],[880,.16]].forEach(([f,d])=>{const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+d;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.18,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+.55)})}catch(e){}}
+function voiceToggle(){_vOn=!_vOn;try{localStorage.zg_voice=_vOn?'1':'0'}catch(e){}voiceBtn();toast(_vOn?'Voice guidance on':'Voice guidance off');if(_vOn){chime();say('Voice guidance is on.')}}
+document.addEventListener('pointerdown',()=>{if(_vu)return;_vu=1;try{if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}const C=window.AudioContext||window.webkitAudioContext;if(C){window._ac=window._ac||new C();if(window._ac.resume)window._ac.resume()}}catch(e){}},true);
+document.body.insertAdjacentHTML('beforeend','<div id="trp" class="nbc trp"></div>');voiceBtn();
+const _SP='<button type="button" class="vspk" aria-label="Voice" onclick="voiceToggle()"><svg class="i" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></button>';
+let _tc={id:null,st:'',said:{},path:null,cum:null,tot:0,mins:0,off:0,lastOff:0,loading:0,pl:null};
+function dseg(p,a,b){const k=111.32,cl=Math.cos(p.lat*Math.PI/180),X=q=>(q.lng-p.lng)*k*cl,Y=q=>(q.lat-p.lat)*k,ax=X(a),ay=Y(a),dx=X(b)-ax,dy=Y(b)-ay,l=dx*dx+dy*dy,t=l?Math.max(0,Math.min(1,(-ax*dx-ay*dy)/l)):0;return Math.hypot(ax+t*dx,ay+t*dy)}
+function nearOnPath(p,P){let best=1e9,bi=1;for(let i=1;i<P.length;i++){const d=dseg(p,P[i-1],P[i]);if(d<best){best=d;bi=i}}return{d:best,i:bi}}
+function tripChip(h,warn){const c=document.getElementById('trp');if(!c)return;if(h){c.innerHTML=h+_SP;c.classList.toggle('warn',!!warn);c.classList.add('on');voiceBtn()}else c.classList.remove('on')}
+function tripClear(){try{_tc.pl&&_tc.pl.setMap(null)}catch(e){}_tc={id:null,st:'',said:{},path:null,cum:null,tot:0,mins:0,off:0,lastOff:0,loading:0,pl:null};tripChip('')}
+async function tripTick(){const r=typeof ride!=='undefined'&&ride;if(!r||typeof me==='undefined'||!me){if(_tc.id)tripClear();return}
+ const isD=me.role==='driver';let first=false;if(_tc.id!==r.id){tripClear();_tc.id=r.id;first=true}
+ if(r.status!==_tc.st){_tc.st=r.status;
+  if(r.status==='accepted'&&!isD&&first)say('Your driver is on the way.');
+  else if(!first){
+   if(r.status==='accepted'&&!isD)say('Your driver is on the way.');
+   if(r.status==='arrived'&&!isD){chime();say('Your driver has arrived.')}
+   if(r.status==='ongoing'){chime();say(isD?'Trip started. Drive safely.':'Safe journey.');if(!isD)toast('Safe journey. Fambai zvakanaka.');_tc.path=null}
+   if(r.status==='done')say(isD?'Trip complete. Well done.':'You have arrived. Thank you for riding with ZimGo.')}}
+ if(isD||!r.dLoc||!r.pickup||!r.drop){if(r.status==='done'||isD)tripChip('');return}
+ const dl=r.dLoc,hh=m=>new Date(Date.now()+m*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+ if(r.status==='accepted'){const k=hv(dl,r.pickup);if(k<.5&&!_tc.said.near){_tc.said.near=1;say('Your driver is almost here.')}tripChip(`${ic('car',18)}<span>Driver ${k<.15?'is here':'about '+eta(k)+' min away'} · ${k.toFixed(1)} km</span>`);return}
+ if(r.status==='arrived'){tripChip(`${ic('car',18)}<span>Your driver has arrived</span>`);return}
+ if(r.status!=='ongoing'){tripChip('');return}
+ if(!_tc.path&&!_tc.loading){_tc.loading=1;try{const x=await route({lat:r.pickup.lat,lng:r.pickup.lng},{lat:r.drop.lat,lng:r.drop.lng});if(x.path&&x.path.length>5){const c=[0];for(let i=1;i<x.path.length;i++)c.push(c[i-1]+kmB(x.path[i-1].lat,x.path[i-1].lng,x.path[i].lat,x.path[i].lng));_tc.path=x.path;_tc.cum=c;_tc.tot=c[c.length-1];_tc.mins=x.mins}}catch(e){}_tc.loading=0}
+ let rem,mins,pct,off=false;
+ if(_tc.path){const n=nearOnPath(dl,_tc.path);rem=Math.max(0,_tc.tot-_tc.cum[n.i]);mins=Math.max(1,Math.round(_tc.mins*rem/(_tc.tot||1)));pct=Math.round((1-rem/(_tc.tot||1))*100);
+  _tc.off=n.d>.45?_tc.off+1:0;off=_tc.off>=3;
+  if(off&&Date.now()-_tc.lastOff>90000){_tc.lastOff=Date.now();say('Your driver seems to be off the planned route.');toast('Your driver looks off the planned route. Share your trip if you feel unsafe.')}
+  try{if(!EMB&&window.google&&map&&map.setCenter){_tc.pl&&_tc.pl.setMap(null);_tc.pl=new google.maps.Polyline({map,path:[dl,..._tc.path.slice(n.i)],strokeColor:'#2f7bff',strokeWeight:6,strokeOpacity:.95,zIndex:3})}}catch(e){}}
+ else{rem=hv(dl,r.drop)*1.25;mins=Math.max(1,eta(rem));const t=+r.km||rem;pct=Math.max(0,Math.min(99,Math.round((1-rem/Math.max(t,rem))*100)))}
+ if(rem<.6&&!_tc.said.close){_tc.said.close=1;say('You are almost at your destination.')}
+ tripChip(`${ic(off?'x':'car',18)}<span>${off?'Off route · ':''}${rem.toFixed(1)} km left · ${mins} min · ETA ${hh(mins)}</span><div class="bar"><i style="width:${pct}%"></i></div>`,off)}
+setInterval(()=>{try{tripTick()}catch(e){}},2500);
+/* ============ small map extras ============ */
 </script>
 </body></html>
