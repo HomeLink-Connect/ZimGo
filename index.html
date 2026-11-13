@@ -2249,14 +2249,14 @@ setInterval(()=>{if(_was&&!(typeof me!=='undefined'&&me&&me.role==='driver'&&onl
 const _nd=new Map();let _ndL=[],_perr='',_hold=0;
 function nearChip(h,click){const c=document.getElementById('nbc');if(!c)return;if(h){c.innerHTML=h;c.classList.add('on');c.style.pointerEvents=click?'auto':'none';c.onclick=click?()=>showNear():null}else c.classList.remove('on')}
 function clearNear(){_nd.forEach(m=>m.setMap(null));_nd.clear();_ndL=[];placeEcars(false)}
-function glide(m,to,ms){const f=m.getPosition(),a={lat:f.lat(),lng:f.lng()};if(m._r)cancelAnimationFrame(m._r);const t0=performance.now(),st=n=>{const t=Math.min(1,(n-t0)/ms);m.setPosition({lat:a.lat+(to.lat-a.lat)*t,lng:a.lng+(to.lng-a.lng)*t});if(t<1)m._r=requestAnimationFrame(st)};m._r=requestAnimationFrame(st)}
+function glideTo(m,to,ms){const f=m.getPosition(),a={lat:f.lat(),lng:f.lng()};if(m._r)cancelAnimationFrame(m._r);const t0=performance.now(),st=n=>{const t=Math.min(1,(n-t0)/ms);m.setPosition({lat:a.lat+(to.lat-a.lat)*t,lng:a.lng+(to.lng-a.lng)*t});if(t<1)m._r=requestAnimationFrame(st)};m._r=requestAnimationFrame(st)}
 function placeEcars(){}
 async function pollNear(){if(document.hidden||typeof me==='undefined'||!me||me.role==='driver')return;if(ride){clearNear();return}
  try{const d=(await db.collection('presence').doc('all').get()).data(),all=(d&&d.d)||{},c=(typeof here!=='undefined'&&here&&here.lat!=null)?here:{lat:-17.8292,lng:31.0522},now=Date.now(),L=[];_perr='';
   Object.entries(all).forEach(([uid,v])=>{if(uid===me.uid||!v||now-v.t>75000)return;const km=kmB(c.lat,c.lng,v.lat,v.lng);if(km<=25)L.push({uid,lat:v.lat,lng:v.lng,h:v.h||0,car:v.car||'',km,age:Math.round((now-v.t)/1000)})});
   L.sort((x,y)=>x.km-y.km);_ndL=L;
   if(EMB)placeEcars(true);
-  else if(window.google&&map&&map.setCenter){const seen=new Set();L.forEach(v=>{seen.add(v.uid);const pos={lat:v.lat,lng:v.lng},ic=carI(v.h,v.car);let m=_nd.get(v.uid);if(!m){m=new google.maps.Marker({map,position:pos,icon:ic,zIndex:5,title:v.car||'ZimGo car'});m.addListener('click',()=>showNear());_nd.set(v.uid,m)}else{if(ic)m.setIcon(ic);glide(m,pos,10000)}});_nd.forEach((m,u)=>{if(!seen.has(u)){m.setMap(null);_nd.delete(u)}})}
+  else if(window.google&&map&&map.setCenter){const seen=new Set();L.forEach(v=>{seen.add(v.uid);const pos={lat:v.lat,lng:v.lng},ic=carI(v.h,v.car);let m=_nd.get(v.uid);if(!m){m=new google.maps.Marker({map,position:pos,icon:ic,zIndex:5,title:v.car||'ZimGo car'});m.addListener('click',()=>showNear());_nd.set(v.uid,m)}else{if(ic)m.setIcon(ic);glideTo(m,pos,10000)}});_nd.forEach((m,u)=>{if(!seen.has(u)){m.setMap(null);_nd.delete(u)}})}
   vehChip()}catch(e){_perr=(e&&e.code)==='permission-denied'?'Firestore rules not published':((e&&e.code)||'error');vehChip()}}
 function focusCar(){const v=_ndL[0];if(!v)return;if(EMB)embCenter({lat:v.lat,lng:v.lng});else if(map&&map.panTo){map.panTo({lat:v.lat,lng:v.lng});if(map.getZoom()<16)map.setZoom(16)}}
 function showNear(){pollNear();const L=_ndL;
@@ -2334,5 +2334,8 @@ async function s_here(v,c){const K=window.ZG_HERE_KEY;if(!K)return[];const q=enc
 {const _nr=nrev;nrev=async function(ll){const K=window.ZG_HERE_KEY;if(K){try{const j=await(await fetch(`https://revgeocode.search.hereapi.com/v1/revgeocode?at=${ll.lat},${ll.lng}&lang=en&limit=1&apiKey=${K}`)).json(),i=j.items&&j.items[0];if(i){const a=i.address||{},t=i.title&&i.resultType!=='houseNumber'?i.title:[a.street,a.district||a.city].filter(Boolean).join(', ');if(t)return t.split(',').slice(0,2).join(',')}}catch(e){}}return _nr(ll)}}
 {const _or=osrmRoute;osrmRoute=async function(a,b){const K=window.ZG_ORS_KEY;if(K){try{const r=await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Authorization':K,'Content-Type':'application/json'},body:JSON.stringify({coordinates:[[a.lng,a.lat],[b.lng,b.lat]]})});
    if(r.ok){const j=await r.json(),f=j.features&&j.features[0];if(f)return{km:f.properties.summary.distance/1000,mins:Math.max(1,Math.round(f.properties.summary.duration/60)),path:f.geometry.coordinates.map(c=>({lat:c[1],lng:c[0]}))}}}catch(e){}}return _or(a,b)}}
+
+/* drivers: keep the screen awake while online so the live position keeps flowing */
+{let wl=null;const want=()=>typeof me!=='undefined'&&me&&me.role==='driver'&&online,ask=async()=>{try{if(want()&&!wl&&navigator.wakeLock&&!document.hidden){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}else if(!want()&&wl){await wl.release();wl=null}}catch(e){wl=null}};setInterval(ask,5000);document.addEventListener('visibilitychange',ask)}
 </script>
 </body></html>
