@@ -27,17 +27,18 @@ window.zgShim=function(){var ML=window.maplibregl,lines=[],pid=0;
   return{version:8,glyphs:GL,sources:{b:src('base',kind==='night'?'explore.night':'explore.day','© HERE')},layers:[{id:'b',type:'raster',source:'b'}]}}
  function isDark(){try{return!!(window.zgDark&&zgDark())}catch(e){return false}}
  var GT=window.ZG_TILES==='google',ZO=GT?0:1;
- function gTiles(l){return[0,1,2,3].map(function(i){return'https://mt'+i+'.google.com/vt/lyrs='+l+'&hl=en&gl=ZW&x={x}&y={y}&z={z}'})}
- function gStyle(l){return{version:8,glyphs:GL,sources:{g:{type:'raster',tiles:gTiles(l),tileSize:256,maxzoom:20,attribution:'Map data © Google'}},layers:[{id:'g',type:'raster',source:'g'}]}}
+ var GSC=(window.devicePixelRatio||1)>=1.5?2:1;
+ function gTiles(l){return[0,1,2,3].map(function(i){return'https://mt'+i+'.google.com/vt/lyrs='+l+'&hl=en&gl=ZW&scale='+GSC+'&x={x}&y={y}&z={z}'})}
+ function gStyle(l){return{version:8,glyphs:GL,sources:{g:{type:'raster',tiles:gTiles(l),tileSize:256,maxzoom:20,attribution:'Map data © Google'}},layers:[{id:'g',type:'raster',source:'g',paint:{'raster-fade-duration':0}}]}}
  var GSTREET=gStyle('m'),GSAT=gStyle('y');
  var SAT={version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},lab:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19}},layers:[{id:'sat',type:'raster',source:'sat'},{id:'lab',type:'raster',source:'lab'}]};
  function GMap(el,o){var c=(o&&o.center)||{lat:-17.8292,lng:31.0522};c=ll(c);this.el=el;this.sat=false;
-  this.m=new ML.Map({container:el,style:this.cur(),center:[c.lng,c.lat],zoom:((o&&o.zoom)||15)-ZO,maxZoom:21,minZoom:2,dragRotate:false,pitchWithRotate:false,attributionControl:{compact:true},fadeDuration:0});
+  this.m=new ML.Map({container:el,style:this.cur(),center:[c.lng,c.lat],zoom:((o&&o.zoom)||15)-ZO,maxZoom:21,minZoom:2,dragRotate:false,pitchWithRotate:false,attributionControl:{compact:true},fadeDuration:0,maxTileCacheSize:160,refreshExpiredTiles:false,renderWorldCopies:false});
   try{this.m.touchZoomRotate.disableRotation()}catch(e){}try{this.m.touchPitch.disable()}catch(e){}
-  this.m.on('style.load',function(){lines.slice().forEach(function(l){l._add()})});this.th()}
+  var G=this;this.m.on('style.load',function(){lines.slice().forEach(function(l){l._add()});G.th()});this.th()}
  GMap.prototype.cur=function(){var d=isDark();this.hk=d;if(window.ZG_HERE_KEY)return hereStyle(this.sat?'sat':(d?'night':'day'));if(GT)return this.sat?GSAT:GSTREET;return this.sat?SAT:STREET};
  GMap.prototype.restyle=function(){this.m.setStyle(this.cur());this.th()};
- GMap.prototype.th=function(){this.el.classList.toggle('zgdark',!window.ZG_HERE_KEY&&isDark()&&!this.sat)};
+ GMap.prototype.th=function(){var d=isDark();this.el.classList.toggle('zgdark',!GT&&!window.ZG_HERE_KEY&&d&&!this.sat);if(GT)try{if(this.m.getLayer('g')){this.m.setPaintProperty('g','raster-brightness-max',d&&!this.sat?.72:1);this.m.setPaintProperty('g','raster-saturation',d&&!this.sat?-.25:0)}}catch(e){}};
  GMap.prototype.setCenter=function(p){p=ll(p);this.m.jumpTo({center:[p.lng,p.lat]})};
  GMap.prototype.panTo=function(p){p=ll(p);this.m.easeTo({center:[p.lng,p.lat],duration:450})};
  GMap.prototype.setZoom=function(z){this.m.easeTo({zoom:z-ZO,duration:250})};
@@ -149,7 +150,9 @@ service cloud.firestore{
    allow read:if signedIn();
    allow create:if signedIn()&&request.resource.data.by==request.auth.uid
      &&request.resource.data.name is string&&request.resource.data.name.size()<=80
-     &&request.resource.data.lat is number&&request.resource.data.lng is number;
+     &&request.resource.data.lat is number&&request.resource.data.lng is number
+     &&(!('adm' in request.resource.data)||request.resource.data.adm==false||isAdmin());
+   allow update:if isAdmin();
    allow delete:if signedIn()&&(resource.data.by==request.auth.uid||isAdmin());
   }
 
@@ -790,7 +793,7 @@ window.initMap=async()=>{if(EMB)return;try{await google.maps.importLibrary('maps
  map.addListener('dragstart',()=>{const p=$('#pin');p&&p.classList.add('lift')});map.addListener('dragend',onDrag);_mr()};
 window.gm_authFailure=()=>useEmbed();
 if(window.__gm)window.initMap();else if(window.__gmerr)useEmbed();
-setTimeout(()=>{if(!map)useEmbed()},8000);
+setTimeout(()=>{if(!map)useEmbed()},20000);
 /* Keyless Google Maps embed (same method as the school website). Used automatically when the Maps JS API key/APIs are not working. */
 function embShow(u){if(emb.url===u)return;emb.url=u;$('#emb').src=u}
 function embCenter(ll){const la=+(typeof ll.lat==='function'?ll.lat():ll.lat),ln=+(typeof ll.lng==='function'?ll.lng():ll.lng);if(!isFinite(la)||!isFinite(ln))return;emb.c={lat:la,lng:ln};embShow(embUrl({lat:la,lng:ln}))}
@@ -1304,7 +1307,7 @@ function pgSettings(){
  ${row('file','Terms &amp; Conditions','',"pgOpen(pgLegal,['terms'])")}
  ${row('shield','Privacy Policy','',"pgOpen(pgLegal,['privacy'])")}
  </div>
- ${me.admin?`<div class="sec">Admin</div><div class="lg">${row('shieldcheck','Driver reviews','Approve or reject new drivers',"pgOpen(pgAdmin)")}</div>`:''}
+ ${me.admin?`<div class="sec">Admin</div><div class="lg">${row('shieldcheck','Driver reviews','Approve or reject new drivers',"pgOpen(pgAdmin)")}${row('pin','Places on the map','Add, edit or remove places for everyone',"pgOpen(pgPlaces)")}</div>`:''}
  <button class="lnk out" onclick="pgClose();auth.signOut()">${ic('logout',18)} Sign out</button>
  <p class="m" style="text-align:center">${APP.name} · v${APP.version}</p>`)}
 function showSettings(){PGS.length=0;pgOpen(pgSettings)}
@@ -1544,6 +1547,55 @@ async function vSubmit(){
   me={...me,...upd,dsubmitted:null};if(me.role==='driver'){me.role='passenger'}
   VS=null;PGS.length=0;pgOpen(pgDriver);toast('Submitted for review')
  }catch(e){toast('Upload failed. Check your connection and try again.');VS.step=5;pgRender()}}
+
+
+/* ============ ADMIN: places on the map (live for everyone) ============ */
+const PCATS=[['school','School'],['shop','Shop'],['health','Clinic / Hospital'],['food','Restaurant / Café'],['church','Church'],['transport','Bus stop / Rank'],['office','Office / Business'],['landmark','Landmark'],['other','Other']];
+const pcLabel=c=>(PCATS.find(x=>x[0]===c)||['','Place'])[1];
+function pgPlaces(){
+ const draw=(q)=>{q=(q||'').trim().toLowerCase();const L=_cm.filter(p=>!q||((p.name||'')+' '+(p.alias||'')+' '+(p.addr||'')).toLowerCase().includes(q)).sort((a,b)=>(b.adm?1:0)-(a.adm?1:0)||String(a.name).localeCompare(String(b.name))).slice(0,150);
+  const el=$('#plst');if(!el)return;el.innerHTML=L.length?`<div class="lg">${L.map(p=>`<div class="lr" onclick="placeEdit('${p.id}')"><span class="lt">${ic('pin',20)}</span><div class="lm"><b>${esc(p.name)}</b><small>${esc(pcLabel(p.cat))}${p.addr?' · '+esc(p.addr):''}${p.adm?' · verified':' · by user'}</small></div>${ic('chevR',18,'ch')}</div>`).join('')}</div>`:'<p class="m">No places yet. Tap “Add place”.</p>'};
+ pgSet('Places on the map',`<p class="m">${_cm.length} place${_cm.length===1?'':'s'}. Anything you add or change appears for every ZimGo user straight away, on the map and in search.</p>
+ <button class="btn" onclick="placeEdit()">${ic('plus',20)} Add place</button>
+ <input class="cin" id="plq" placeholder="Search places" style="margin:14px 0;font-size:16px" oninput="window._plDraw(this.value)"><div id="plst"></div>`);
+ window._plDraw=draw;draw('');window._plHook=()=>{if(!$('#pg').hidden&&$('#plq'))draw($('#plq').value)}}
+function placeEdit(id){
+ const p=id?_cm.find(x=>x.id===id):null;if(!me||!me.admin)return toast('Admins only.');
+ let ed=$('#pe');ed&&ed.remove();
+ ed=document.createElement('div');ed.id='pe';
+ ed.style.cssText='position:fixed;inset:0;z-index:1300;background:var(--bgS);display:flex;flex-direction:column';
+ ed.innerHTML=`<div style="display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 12px 8px"><button type="button" onclick="placeClose()" style="background:none;border:0;color:var(--tx);padding:8px;display:flex">${ic('chevL',24)}</button><h3 style="font-size:19px;flex:1">${p?'Edit place':'Add place'}</h3></div>
+ <div style="padding:0 12px 8px;position:relative"><input class="cin" id="pesq" placeholder="Search to jump the map there…" style="font-size:15px;padding:11px"><div id="pesr" style="position:absolute;left:12px;right:12px;top:100%;z-index:5;background:var(--bgS);border-radius:12px;box-shadow:0 6px 24px var(--shadow);max-height:42vh;overflow:auto"></div></div>
+ <div style="position:relative;flex:1;min-height:200px"><div id="pemap" style="position:absolute;inset:0"></div>
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);pointer-events:none;display:flex;flex-direction:column;align-items:center;z-index:5"><div style="width:42px;height:42px;border-radius:13px;background:var(--acc);color:var(--accT);display:flex;align-items:center;justify-content:center">${ic('pin',24)}</div><div style="width:3px;height:12px;background:var(--acc)"></div></div></div>
+ <div style="padding:10px 12px calc(12px + env(safe-area-inset-bottom));background:var(--bgS);max-height:52vh;overflow:auto">
+  <p class="m" style="margin:0 0 8px">Drag the map so the pin sits exactly on the place.</p>
+  <input class="cin" id="pen" placeholder="Place name, e.g. Shashi View Primary School" maxlength="80" style="font-size:16px;margin-bottom:8px" value="${p?esc(p.name):''}">
+  <select class="cin" id="pec" style="font-size:16px;margin-bottom:8px">${PCATS.map(c=>`<option value="${c[0]}" ${p&&p.cat===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select>
+  <input class="cin" id="pea" placeholder="Also known as (extra search words), e.g. Piki, Pikishop" maxlength="120" style="font-size:16px;margin-bottom:8px" value="${p?esc(p.alias||''):''}">
+  <input class="cin" id="pel" placeholder="Area / suburb (optional)" maxlength="80" style="font-size:16px;margin-bottom:10px" value="${p?esc(p.addr||''):''}">
+  <button class="btn" id="pesv" onclick="placeSave('${id||''}')">${p?'Save changes':'Add to map for everyone'}</button>
+  ${p?`<button class="btn d" style="margin-top:8px;color:#e5484d" onclick="placeDel('${id}')">${ic('trash',18)} Delete place</button>`:''}</div>`;
+ document.body.appendChild(ed);
+ const c0=p?{lat:p.lat,lng:p.lng}:(()=>{try{const c=map.getCenter();return{lat:c.lat(),lng:c.lng()}}catch(e){return{lat:-17.8292,lng:31.0522}}})();
+ try{window._pem=new google.maps.Map($('#pemap'),{center:c0,zoom:p?18:16,disableDefaultUI:true,gestureHandling:'greedy',clickableIcons:false,maxZoom:21,minZoom:5})}catch(e){toast('Map could not open.')}
+ let t=0;$('#pesq').oninput=function(){clearTimeout(t);const v=this.value.trim(),r=$('#pesr');if(v.length<2){r.innerHTML='';return}
+  t=setTimeout(async()=>{r.innerHTML='<p class="m" style="padding:12px">Searching…</p>';let L=[];try{L=await searchAll(v)}catch(e){}window._pel=L;
+   r.innerHTML=L.length?L.slice(0,8).map((x,i)=>`<div class="rec" onclick="placeJump(${i})">${IC_PIN}<div>${esc(x.name)}<small>${esc(x.sub||'')}</small></div></div>`).join(''):'<p class="m" style="padding:12px">No results. Drag the map instead.</p>'},350)}}
+function placeJump(i){const x=(window._pel||[])[i];if(!x||!window._pem)return;_pem.setCenter({lat:x.lat,lng:x.lng});_pem.setZoom(18);$('#pesr').innerHTML='';$('#pesq').value=''}
+function placeClose(){try{window._pem&&window._pem.m&&window._pem.m.remove()}catch(e){}window._pem=null;const e=$('#pe');e&&e.remove()}
+async function placeSave(id){
+ if(!me||!me.admin)return toast('Admins only.');
+ const name=$('#pen').value.trim().replace(/\s+/g,' ');if(name.length<2)return toast('Type the place name.');
+ if(!window._pem)return toast('Map not ready.');const c=_pem.getCenter(),lat=+c.lat().toFixed(6),lng=+c.lng().toFixed(6),cat=$('#pec').value,alias=$('#pea').value.trim().slice(0,120),addr=$('#pel').value.trim().slice(0,80);
+ const nl=name.toLowerCase(),kw=[...new Set((nl+' '+alias.toLowerCase()).split(/\s+/).filter(w=>w.length>=2))].slice(0,30);
+ const b=$('#pesv');b.disabled=true;
+ try{if(id)await db.collection('places').doc(id).update({name:name.slice(0,80),nl,kw,lat,lng,cat,alias,addr,adm:true,upd:Date.now(),updBy:me.uid});
+  else await db.collection('places').add({name:name.slice(0,80),nl,kw,lat,lng,cat,alias,addr,adm:true,by:me.uid,t:Date.now()});
+  toast(id?'Saved. Updated for everyone.':'Added. Everyone can now find '+name);placeClose();if(!$('#pg').hidden&&window._plHook)setTimeout(window._plHook,400)}
+ catch(e){b.disabled=false;toast(String(e.code||e.message||e).includes('permission')?'Not allowed. Publish the new Firestore rules.':'Could not save. Check your internet.')}}
+async function placeDel(id){const p=_cm.find(x=>x.id===id);if(!p||!confirm('Delete “'+p.name+'” for everyone?'))return;
+ try{await db.collection('places').doc(id).delete();toast('Deleted.');placeClose()}catch(e){toast('Could not delete.')}}
 
 /* ============ ADMIN: review drivers ============ */
 async function pgAdmin(){
@@ -2252,7 +2304,7 @@ function previewTrip(){if(_pv)return stopPreview();if(EMB||!map||!window.google)
 const _rv9=routeView;routeView=function(){_rv9();const f=document.querySelector('#sheet .fr');if(f&&!document.getElementById('pvb'))f.insertAdjacentHTML('beforebegin',`<button id="pvb" class="btn d" onclick="previewTrip()">${ic('car',18)} Preview trip</button>`)};
 const _cm9=clrMap;clrMap=function(){try{stopPreview()}catch(e){}return _cm9.apply(this,arguments)};
 /* cinematic fly-in on first open: from the whole country down to your street */
-mapReady.then(()=>{if(EMB||!map||!map.setZoom||sessionStorage.zg_fly)return;sessionStorage.zg_fly=1;let n=0;
+mapReady.then(()=>{return;if(EMB||!map||!map.setZoom||sessionStorage.zg_fly)return;sessionStorage.zg_fly=1;let n=0;
  const w=setInterval(()=>{n++;if(typeof here!=='undefined'&&here&&here.lat!=null){clearInterval(w);let z=7,stop=false;const z1=Math.max(15,Math.round(map.getZoom()||16));
   map.setCenter({lat:here.lat,lng:here.lng});map.setZoom(z);const L=map.addListener('dragstart',()=>{stop=true}),t=setInterval(()=>{z++;if(stop||z>=z1){clearInterval(t);if(!stop)map.setZoom(z1);google.maps.event.removeListener(L)}else map.setZoom(z)},380)}else if(n>24)clearInterval(w)},250)});
 
@@ -2314,9 +2366,11 @@ async function s_over(v,c,wide){const ws=v.toLowerCase().replace(/[^a-z0-9 ]/g,'
  const ql=`[out:json][timeout:12];${wide?'area["ISO3166-1"="ZW"][admin_level=2]->.z;':''}nwr["name"~"${w}",i]${sel};out center 40;`;
  return(await ovq(ql)).map(e=>{const t=e.tags||{},p=ovLL(e);return{lat:p.lat,lng:p.lng,name:t.name||'',sub:[t['addr:suburb']||t['addr:city']||'',t.amenity||t.shop||t.healthcare||t.tourism||t.place||t.highway||''].filter(Boolean).join(' · ')||'Zimbabwe',_ok:ws.every(x=>(t.name||'').toLowerCase().includes(x))}}).filter(x=>x.name&&x.lat!=null&&x._ok).slice(0,20)}
 /* places added by ZimGo users */
-async function s_comm(v){const q=v.trim().toLowerCase();if(q.length<2)return[];const col=db.collection('places'),ts=q.split(/\s+/),w=[...ts].sort((a,b)=>b.length-a.length)[0];
- const[a,b]=await Promise.all([col.where('nl','>=',q).where('nl','<=',q+'\uf8ff').limit(8).get(),col.where('kw','array-contains',w).limit(12).get()]),m=new Map();
- [...a.docs,...b.docs].forEach(d=>{const x=d.data();if(ts.every(t=>(x.nl||'').includes(t)))m.set(d.id,{lat:x.lat,lng:x.lng,name:x.name,sub:'Added by ZimGo users'})});return[...m.values()]}
+async function s_comm(v){const q=v.trim().toLowerCase();if(q.length<2)return[];const ts=q.split(/\s+/).filter(Boolean),qn=q.replace(/[^a-z0-9]/g,''),out=[];
+ for(const p of _cm){const nm=(p.name||'').toLowerCase(),hay=nm+' '+(p.alias||'').toLowerCase()+' '+(p.addr||'').toLowerCase(),hn=hay.replace(/[^a-z0-9]/g,'');
+  if(!(ts.every(t=>hay.includes(t))||(qn.length>=3&&hn.includes(qn))))continue;
+  out.push({lat:p.lat,lng:p.lng,name:p.name,sub:p.adm?('Verified by ZimGo'+(p.addr?' · '+p.addr:'')):(p.addr||'Added by ZimGo users'),_s:(nm===q?0:nm.startsWith(q)?1:nm.includes(q)?2:3)+(p.adm?0:.5)})}
+ return out.sort((a,b)=>a._s-b._s).slice(0,10)}
 function addPlaceFlow(n){window._addName=n;try{chooseOnMap()}catch(e){toast('Open the map and drop a pin where this place is.')}}
 async function savePlace(name,ll){try{const nl=name.trim().toLowerCase(),kw=[...new Set(nl.split(/\s+/).filter(w=>w.length>=2))];
  await db.collection('places').add({name:name.trim().slice(0,80),nl,kw,lat:ll.lat,lng:ll.lng,by:me.uid,t:Date.now()});_cm.push({name:name.trim(),lat:ll.lat,lng:ll.lng});poiRefresh();toast('Thanks! ZimGo now knows '+name.trim())}catch(e){toast('Could not save that place.')}}
@@ -2326,19 +2380,25 @@ async function savePlace(name,ll){try{const nl=name.trim().toLowerCase(),kw=[...
  const add=x=>{if(!x)return;const k=(x.name+'|'+String(x.sub||'').split(',')[0]).toLowerCase();if(seen.has(k))return;seen.add(k);out.push(x)};
  s_seed(v).forEach(add);cm.forEach(add);const L=[base,o1,o2];for(let i=0;out.length<18&&L.some(a=>i<a.length);i++)L.forEach(a=>add(a[i]));return out}}
 /* named places drawn on the map (hospitals, schools, shops, bus stops...) + community places */
-let _cm=[];const _pf=new Map(),_ptile=new Set();let _pm=null;
+let _cm=(()=>{try{return JSON.parse(localStorage.zg_pl||'[]')}catch(e){return[]}})();const _pf=new Map(),_ptile=new Set();let _pm=null;
 const poiKind=t=>/^(hospital|clinic|doctors|pharmacy|dentist)$/.test(t.amenity||'')||t.healthcare?'health':/^(school|college|university|kindergarten)$/.test(t.amenity||'')?'edu':t.shop?'shop':/^(restaurant|cafe|fast_food|bar|pub|food_court)$/.test(t.amenity||'')?'food':'other';
 const poiFC=()=>{const f=[..._pf.values()];(window.ZG_SEED||[]).forEach(p=>f.push({type:'Feature',geometry:{type:'Point',coordinates:[p[2],p[1]]},properties:{name:p[0],kind:'zg'}}));_cm.forEach(p=>f.push({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:p.name,kind:'zg'}}));return{type:'FeatureCollection',features:f}};
 function poiRefresh(){try{const s=_pm&&_pm.getSource('zgp');s&&s.setData(poiFC())}catch(e){}}
 function poiLayers(){const m=_pm;if(!m)return;const GOOG=window.ZG_TILES==='google';try{if(!m.getSource('zgp'))m.addSource('zgp',{type:'geojson',data:poiFC()});
- if(!m.getLayer('zgp-c'))m.addLayer({id:'zgp-c',type:'circle',source:'zgp',minzoom:14.5,...(GOOG?{filter:['==',['get','kind'],'zg']}:{}),paint:{'circle-radius':['case',['==',['get','kind'],'zg'],7,4.5],'circle-color':['match',['get','kind'],'zg','#18a957','health','#e53935','edu','#1e6fe8','shop','#f08c00','food','#b23fd1','#5f6b7a'],'circle-stroke-color':'#ffffff','circle-stroke-width':1.6}});
- if(!m.getLayer('zgp-t'))m.addLayer({id:'zgp-t',type:'symbol',source:'zgp',minzoom:15.5,...(GOOG?{filter:['==',['get','kind'],'zg']}:{}),layout:{'text-field':['get','name'],'text-font':['Noto Sans Regular'],'text-size':11.5,'text-offset':[0,.9],'text-anchor':'top','text-optional':true,'text-max-width':8},paint:{'text-color':'#222222','text-halo-color':'#ffffff','text-halo-width':1.4}})}catch(e){}}
+ if(!m.getLayer('zgp-c'))m.addLayer({id:'zgp-c',type:'circle',source:'zgp',minzoom:GOOG?12.5:14.5,...(GOOG?{filter:['==',['get','kind'],'zg']}:{}),paint:{'circle-radius':['case',['==',['get','kind'],'zg'],7,4.5],'circle-color':['match',['get','kind'],'zg','#18a957','health','#e53935','edu','#1e6fe8','shop','#f08c00','food','#b23fd1','#5f6b7a'],'circle-stroke-color':'#ffffff','circle-stroke-width':1.6}});
+ if(!m.getLayer('zgp-t'))m.addLayer({id:'zgp-t',type:'symbol',source:'zgp',minzoom:GOOG?14:15.5,...(GOOG?{filter:['==',['get','kind'],'zg']}:{}),layout:{'text-field':['get','name'],'text-font':['Noto Sans Regular'],'text-size':11.5,'text-offset':[0,.9],'text-anchor':'top','text-optional':true,'text-max-width':8},paint:{'text-color':'#222222','text-halo-color':'#ffffff','text-halo-width':1.4}})}catch(e){}}
 async function poiLoad(){const m=_pm;if(!m||window.ZG_TILES==='google'||m.getZoom()<14.5)return;const b=m.getBounds(),n=16384,tx=g=>Math.floor((g+180)/360*n),ty=a=>Math.floor((1-Math.log(Math.tan(a*Math.PI/180)+1/Math.cos(a*Math.PI/180))/Math.PI)/2*n),need=[];
  for(let x=tx(b.getWest());x<=tx(b.getEast())&&need.length<6;x++)for(let y=ty(b.getNorth());y<=ty(b.getSouth())&&need.length<6;y++){const k=x+'/'+y;if(!_ptile.has(k)){_ptile.add(k);need.push([x,y,k])}}
  for(const[x,y,k]of need){const w=x/n*360-180,e=(x+1)/n*360-180,la=a=>Math.atan(Math.sinh(Math.PI*(1-2*a/n)))*180/Math.PI,N=la(y),S=la(y+1),bb=`${S},${w},${N},${e}`;
   try{const el=await ovq(`[out:json][timeout:20];(${['amenity','shop','healthcare','tourism','office','leisure','public_transport'].map(t=>`nwr["name"]["${t}"](${bb});`).join('')});out center 400;`);
    el.forEach(e2=>{const t=e2.tags||{},p=ovLL(e2);if(t.name&&p.lat!=null)_pf.set(e2.type+e2.id,{type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{name:t.name,kind:poiKind(t)}})});poiRefresh()}catch(e3){_ptile.delete(k)}}}
-async function commLoad(){try{const q=await db.collection('places').limit(500).get();_cm=q.docs.map(d=>d.data());poiRefresh()}catch(e){}}
+let _plU=null;
+function plSync(){if(_plU||typeof auth==='undefined'||!auth.currentUser)return;
+ _plU=db.collection('places').limit(5000).onSnapshot(q=>{_cm=q.docs.map(d=>Object.assign({id:d.id},d.data()));
+  try{localStorage.zg_pl=JSON.stringify(_cm.map(x=>({id:x.id,name:x.name,lat:x.lat,lng:x.lng,cat:x.cat||'',alias:x.alias||'',addr:x.addr||'',adm:x.adm?1:0})))}catch(e){}
+  poiRefresh();try{window._plHook&&window._plHook()}catch(e){}},e=>{_plU=null})}
+async function commLoad(){plSync()}
+auth.onAuthStateChanged(u=>{if(u)plSync();else{try{_plU&&_plU()}catch(e){}_plU=null}});
 if(window.ZG_OPEN){mapReady.then(()=>{if(!map||!map.m)return;_pm=map.m;const go=()=>{poiLayers();poiLoad();commLoad()};_pm.on('style.load',poiLayers);_pm.on('moveend',poiLoad);if(_pm.isStyleLoaded())go();else _pm.once('load',go);setInterval(commLoad,300000);
  _pm.on('click',['zgp-c','zgp-t'],e=>{const f=e.features&&e.features[0];if(!f||typeof me==='undefined'||!me||me.role==='driver'||ride||stage!=='idle')return;const p=f.properties;window._poi={ll:{lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]},nm:p.name};
   $('#mdp').innerHTML=`<h3>${esc(p.name)}</h3><p class="m">${p.kind==='zg'?'Added by ZimGo users':'Place on the map'}</p><button class="btn" onclick="mdClose(null);setDrop(_poi.ll,_poi.nm)">Go here</button><button class="lnk" style="color:var(--mut)" onclick="mdClose(null)">Cancel</button>`;$('#md').hidden=false});
