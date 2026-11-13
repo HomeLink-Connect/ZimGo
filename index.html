@@ -64,11 +64,11 @@ window.zgShim=function(){var ML=window.maplibregl,lines=[],pid=0;
  Marker.prototype.addListener=function(n,f){if(n==='click'){this.el.style.pointerEvents='auto';this.el.addEventListener('click',f)}return{remove:function(){}}};
  function Poly(o){this.id='zgp'+(++pid);this.path=(o.path||[]).map(ll);this.o=o;this.map=null;if(o.map)this.setMap(o.map)}
  Poly.prototype._clear=function(){var m=this.map&&this.map.m;if(!m)return;try{if(m.getLayer(this.id+'l'))m.removeLayer(this.id+'l');if(m.getLayer(this.id+'c'))m.removeLayer(this.id+'c');if(m.getSource(this.id))m.removeSource(this.id)}catch(e){}};
- Poly.prototype._add=function(){var m=this.map&&this.map.m;if(!m)return;this._clear();var w=this.o.strokeWeight||5;try{
+ Poly.prototype._add=function(){var m=this.map&&this.map.m;if(!m)return false;this._clear();var w=this.o.strokeWeight||5;try{
   m.addSource(this.id,{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:this.path.map(function(p){return[p.lng,p.lat]})}}});
   m.addLayer({id:this.id+'c',type:'line',source:this.id,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':w+4,'line-opacity':.95}});
-  m.addLayer({id:this.id+'l',type:'line',source:this.id,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#2f7bff','line-width':w}})}catch(e){}};
- Poly.prototype.setMap=function(m){var self=this;if(!m){this._clear();lines=lines.filter(function(l){return l!==self});this.map=null;return}this.map=m;if(lines.indexOf(this)<0)lines.push(this);if(m.m.isStyleLoaded())this._add();else m.m.once('load',function(){self._add()})};
+  m.addLayer({id:this.id+'l',type:'line',source:this.id,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#2f7bff','line-width':w}});return true}catch(e){return false}};
+ Poly.prototype.setMap=function(m){var self=this;if(!m){this._clear();lines=lines.filter(function(l){return l!==self});this.map=null;return}this.map=m;if(lines.indexOf(this)<0)lines.push(this);var n=0;(function t(){if(self.map!==m)return;var ok=false;try{ok=self._add()}catch(e){}if(!ok&&n++<60)setTimeout(t,150)})()};
  Poly.prototype.getPath=function(){var p=this.path;return{getArray:function(){return p.map(function(q){return new LatLng(q.lat,q.lng)})}}};
  function Circle(){}Circle.prototype.setCenter=Circle.prototype.setRadius=Circle.prototype.setMap=function(){};
  function Geocoder(){}Geocoder.prototype.geocode=function(){return Promise.reject(new Error('off'))};
@@ -813,10 +813,21 @@ const fx=p=>Promise.resolve(p).catch(e=>toast(String(e.message||e).replace('Fire
 function put(k,pos,icon){if(EMB||!window.google)return;const c=M[k];if(c){c.setPosition(pos);if(icon&&c._k!==icon.url){c.setIcon(icon);c._k=icon.url}}else{M[k]=new google.maps.Marker({map,position:pos,icon,zIndex:k==='c'||k==='me'?9:5});M[k]._k=icon&&icon.url}}
 function clrMap(keep){for(const k in M)if(!keep||!keep.includes(k)){M[k].setMap(null);delete M[k]}if(poly){poly.setMap(null);poly=null}}
 function fit(pts){if(!pts.length)return;if(EMB){const a=pts[0],b=pts[1];if(b)embShow(`https://www.google.com/maps?saddr=${a.lat},${a.lng}&daddr=${b.lat},${b.lng}&output=embed`);else embCenter(a);return}const b=new google.maps.LatLngBounds();pts.forEach(p=>b.extend(p));map.fitBounds(b,{top:150,bottom:380,left:50,right:50})}
-async function nrev(ll){try{const j=await(await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${ll.lat}&lon=${ll.lng}`)).json();return(j.display_name||'').split(',').slice(0,2).join(',')||'Dropped pin'}catch(e){return'Dropped pin'}}
+async function nearPlace(ll){const la=ll.lat.toFixed(6),lo=ll.lng.toFixed(6),A=`(around:45,${la},${lo})`,ql=`[out:json][timeout:8];is_in(${la},${lo})->.a;(wr(pivot.a)["name"]["amenity"];wr(pivot.a)["name"]["leisure"];wr(pivot.a)["name"]["tourism"];wr(pivot.a)["name"]["shop"];wr(pivot.a)["name"]["healthcare"];wr(pivot.a)["name"]["landuse"~"education|retail|commercial|religious"];nwr${A}["name"]["amenity"];nwr${A}["name"]["shop"];nwr${A}["name"]["tourism"];nwr${A}["name"]["office"];nwr${A}["name"]["healthcare"];nwr${A}["name"]["building"];);out center tags 60;`;
+ const el=await ovq(ql),pr=t=>t.amenity?0:t.healthcare?0:t.tourism||t.leisure?1:t.shop||t.office?2:3;let best=null,bs=1e9;
+ for(const e of el){const t=e.tags||{};if(!t.name)continue;const c=e.type==='node'?{lat:e.lat,lng:e.lon}:e.center;if(!c)continue;const d=hv(ll,c)*1000,inn=e.type!=='node'&&d>45&&true;
+  /* elements found by pivot (the point is inside them) are the ones whose centre may be far away */
+  const far=d>45,sc=far?pr(t)*2:d+pr(t)*4+5;if(sc<bs){bs=sc;best={n:t.name,sub:t['addr:suburb']||t['addr:city']||''}}}
+ return best?best.n+(best.sub?', '+best.sub:''):null}
+async function nrev(ll){const T=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(null),ms))]);
+ try{const r=await T(nearPlace(ll),4000);if(r)return r}catch(e){}
+ try{const j=await T(fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&namedetails=1&lat=${ll.lat}&lon=${ll.lng}`).then(r=>r.json()),5000);
+  if(j){const a=j.address||{},nm=(j.namedetails&&j.namedetails.name)||j.name||a.amenity||a.school||a.building||'',rd=[a.road||a.pedestrian||'',a.suburb||a.neighbourhood||a.city_district||a.town||a.city||''].filter(Boolean).join(', ');
+   const out=nm&&rd?nm+', '+rd.split(',').pop().trim():(nm||rd||(j.display_name||'').split(',').slice(0,2).join(','));if(out)return out}}catch(e){}
+ return'Dropped pin'}
 async function rev(ll){if(EMB)return nrev(ll);try{const r=await new google.maps.Geocoder().geocode({location:ll});const f=r.results.find(x=>!/plus_code/.test(x.types.join()))||r.results[0];return(f.formatted_address||'').split(',').slice(0,2).join(',')||'Dropped pin'}catch{return nrev(ll)}}
 async function route(a,b){
- if(window.ZG_OPEN){try{return await osrmRoute(a,b)}catch(e){}}
+ if(window.ZG_OPEN){try{return await osrmRoute(a,b)}catch(e){const km=hv(a,b)*1.3;return{km,mins:eta(km),path:[{lat:a.lat,lng:a.lng},{lat:b.lat,lng:b.lng}]}}}
  if(EMB){const km=hv(a,b)*1.3;return{km,mins:Math.max(1,Math.round(km*2.5)),path:[]}}
  try{const{Route}=await google.maps.importLibrary('routes');const{routes}=await Route.computeRoutes({origin:{lat:a.lat,lng:a.lng},destination:{lat:b.lat,lng:b.lng},travelMode:'DRIVING',fields:['path','distanceMeters','durationMillis']});const r=routes[0];return{km:r.distanceMeters/1000,mins:Math.max(1,Math.round(r.durationMillis/60000)),path:r.path.map(p=>({lat:p.lat,lng:p.lng}))}}catch(e){}
  try{const j=await new google.maps.DirectionsService().route({origin:a,destination:b,travelMode:'DRIVING'});const l=j.routes[0].legs[0];return{km:l.distance.value/1000,mins:Math.max(1,Math.round(l.duration.value/60)),path:j.routes[0].overview_path.map(p=>({lat:p.lat(),lng:p.lng()}))}}catch(e){}
@@ -998,7 +1009,7 @@ async function setDrop(ll,name){
  drop={lat:ll.lat,lng:ll.lng,name};addRecent(drop);stage='route';await doRoute()}
 async function doRoute(){
  $('#pin').hidden=true;clrMap();sh('<h3>Calculating route…</h3>');
- rt=await route(here,drop);
+ rt=await route(here,drop);try{say('Route to '+String(drop.name||'your destination').split(',')[0]+'. '+rt.km.toFixed(1)+' kilometres, about '+rt.mins+(rt.mins===1?' minute.':' minutes.'))}catch(e){}
  const sug=rtype==='c2c'?Math.max(c2cMode==='share'?3:5,Math.round((c2cMode==='share'?2+.35*rt.km:c2cMode==='parcel'?2.5+.45*rt.km:3+.6*rt.km)*2)/2):Math.max(1.5,Math.round((1+.5*rt.km)*2)/2);
  price=sug;window.SUG=sug;paxView()}
 function routeView(){
@@ -1055,7 +1066,7 @@ function drvView(){
  if(!ride||ride.status==='done')return drvIdle();
  const r=ride,toP=r.status==='accepted'||r.status==='arrived',tgt=toP?r.pickup:r.drop;
  put('p',{lat:r.pickup.lat,lng:r.pickup.lng},pickI());put('d',{lat:r.drop.lat,lng:r.drop.lng},dropI());
- if(fitted!==r.status+r.id){fitted=r.status+r.id;fit(here?[here,tgt]:[tgt]);route(toP&&here?here:r.pickup,tgt).then(x=>{if(ride&&ride.id===r.id&&x.path.length>2)drawPoly(x.path)})}
+ if(fitted!==r.status+r.id){fitted=r.status+r.id;fit(here?[here,tgt]:[tgt]);route(toP&&here?here:r.pickup,tgt).then(x=>{if(ride&&ride.id===r.id&&x.path.length>1)drawPoly(x.path);try{say((toP?'Route to pickup. ':'Route to destination. ')+x.km.toFixed(1)+' kilometres, about '+x.mins+' minutes.')}catch(e){}})}
  const nx={accepted:['I have arrived','arrived'],arrived:['Start trip','ongoing'],ongoing:['Complete trip','done']}[r.status];
  sh(`<div class="row"><h3>${toP?'Pick up '+esc(r.paxName):'Trip in progress'}</h3><span class="pr">${money(r.price)}</span></div>
  <p class="m">${esc(r.pickup.name)} → ${esc(r.drop.name)} · ${r.km} km</p>${r.note?`<p class="m">📝 ${esc(r.note)}</p>`:''}
@@ -1666,7 +1677,7 @@ function drvView(){
  if(!ride||ride.status==='done')return drvIdle();
  const r=ride,toP=r.status==='accepted'||r.status==='arrived',tgt=toP?r.pickup:r.drop;
  put('p',{lat:r.pickup.lat,lng:r.pickup.lng},pickI());put('d',{lat:r.drop.lat,lng:r.drop.lng},dropI());
- if(fitted!==r.status+r.id){fitted=r.status+r.id;fit(here?[here,tgt]:[tgt]);route(toP&&here?here:r.pickup,tgt).then(x=>{if(ride&&ride.id===r.id&&x.path.length>2)drawPoly(x.path)})}
+ if(fitted!==r.status+r.id){fitted=r.status+r.id;fit(here?[here,tgt]:[tgt]);route(toP&&here?here:r.pickup,tgt).then(x=>{if(ride&&ride.id===r.id&&x.path.length>1)drawPoly(x.path)})}
  const nx={accepted:['I have arrived','arrived'],arrived:['Start trip','ongoing'],ongoing:['Complete trip','done']}[r.status];
  sh(`<div class="row"><h3>${toP?'Pick up '+esc(r.paxName):'Trip in progress'}</h3><span class="pr">${money(r.price)}</span></div>
  <div class="card"><div class="of"><span onclick="viewUser('${r.pax}','pax')">${avt(r.paxPhoto,r.paxName,52)}</span><div class="t"><b>${esc(r.paxName)}</b><span class="rr">${stars5(r.paxRating||0,12)}<span class="mm">${r.paxRN?(+r.paxRating).toFixed(2)+' ('+r.paxRN+')':'New'}</span></span></div></div></div>
@@ -2332,6 +2343,18 @@ if(window.ZG_OPEN){mapReady.then(()=>{if(!map||!map.m)return;_pm=map.m;const go=
  _pm.on('click',['zgp-c','zgp-t'],e=>{const f=e.features&&e.features[0];if(!f||typeof me==='undefined'||!me||me.role==='driver'||ride||stage!=='idle')return;const p=f.properties;window._poi={ll:{lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]},nm:p.name};
   $('#mdp').innerHTML=`<h3>${esc(p.name)}</h3><p class="m">${p.kind==='zg'?'Added by ZimGo users':'Place on the map'}</p><button class="btn" onclick="mdClose(null);setDrop(_poi.ll,_poi.nm)">Go here</button><button class="lnk" style="color:var(--mut)" onclick="mdClose(null)">Cancel</button>`;$('#md').hidden=false});
  _pm.on('mouseenter',['zgp-c','zgp-t'],()=>{_pm.getCanvas().style.cursor='pointer'});_pm.on('mouseleave',['zgp-c','zgp-t'],()=>{_pm.getCanvas().style.cursor=''})})}
+
+/* ============ extra place search: more sources, merged so other places always show ============ */
+{const _sa5=searchAll,inZW=(la,lo)=>la>-22.6&&la<-15.4&&lo>25.1&&lo<33.2;
+ const xPhoton=async(q,c)=>{const j=await(await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=15&lat=${c.lat}&lon=${c.lng}`)).json();
+  return(j.features||[]).map(f=>{const p=f.properties,g=f.geometry.coordinates;return{lat:g[1],lng:g[0],name:p.name||p.street||'',sub:[p.street&&p.name?p.street:'',p.suburb||p.district,p.city||p.county,p.state].filter(Boolean).join(', ')||'Zimbabwe'}}).filter(x=>x.name&&inZW(x.lat,x.lng))};
+ const xNom=async(q,c)=>{const vb=c?`&viewbox=${c.lng-.6},${c.lat+.6},${c.lng+.6},${c.lat-.6}`:'';const j=await(await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=12&countrycodes=zw&addressdetails=1&namedetails=1${vb}&q=${encodeURIComponent(q)}`)).json();
+  return j.map(x=>{const a=x.display_name.split(',');return{lat:+x.lat,lng:+x.lon,name:(x.namedetails&&x.namedetails.name)||a[0],sub:a.slice(1,4).join(',').trim()||'Zimbabwe'}})};
+ searchAll=async function(v){const c=_ctr(),q=v.trim(),cap=(f,ms)=>Promise.race([Promise.resolve().then(f).catch(()=>[]),new Promise(r=>setTimeout(()=>r([]),ms))]);
+  const[base,a,b,d]=await Promise.all([_sa5(v),cap(()=>xPhoton(q,c),6000),cap(()=>xNom(q,c),6000),cap(()=>xNom(q+' Zimbabwe',null),6000)]),out=[],seen=new Set();
+  const add=x=>{if(!x||!x.name)return;const k=String(x.name).toLowerCase()+'|'+(+x.lat).toFixed(2)+'|'+(+x.lng).toFixed(2);if(seen.has(k))return;seen.add(k);out.push(x)};
+  const L=[base,a,b,d];for(let i=0;out.length<22&&L.some(z=>i<z.length);i++)L.forEach(z=>add(z[i]));
+  const ts=q.toLowerCase().split(/\s+/).filter(Boolean),hit=x=>ts.every(t=>(x.name||'').toLowerCase().includes(t))?0:1;return out.map((x,i)=>[x,i]).sort((p,q2)=>hit(p[0])-hit(q2[0])||p[1]-q2[1]).map(z=>z[0])}}
 
 /* ============ HERE (places + addresses) and OpenRouteService (routes): switch on when the keys are pasted ============ */
 async function s_here(v,c){const K=window.ZG_HERE_KEY;if(!K)return[];const q=encodeURIComponent(v),at=`${c.lat},${c.lng}`,get=async u=>{const r=await fetch(u);if(!r.ok)throw new Error('HERE '+r.status);return(await r.json()).items||[]};
