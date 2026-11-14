@@ -883,7 +883,7 @@ function boot(){
 }
 function openMenu(){
  $('#drp').innerHTML=`<div class="av" style="width:60px;height:60px;font-size:26px;background:var(--acc);color:var(--accT);margin-bottom:12px">${esc(me.name[0]||'?').toUpperCase()}</div><h3>${esc(me.name)}</h3><p class="m">${esc(me.phone)} · ${me.role==='driver'?esc(me.car)+' · '+esc(me.plate):'Passenger'}</p><div style="height:14px"></div>
- <div class="di" onclick="showSettings()">⚙️ Settings</div><div class="di" onclick="showHist()">🕘 Ride history</div><div class="di" onclick="auth.signOut();$('#dr').hidden=true" style="color:var(--danger)">Sign out</div><p class="m" style="margin-top:20px">ZimGo · Pay cash to your driver</p>`;$('#dr').hidden=false}
+ <div class="di zglw"><span class="zgl"><button data-l="en">En</button><button data-l="sn">Sn</button><button data-l="zu">Zu</button></span></div><div class="di" onclick="showSettings()">⚙️ Settings</div><div class="di" onclick="showHist()">🕘 Ride history</div><div class="di" onclick="auth.signOut();$('#dr').hidden=true" style="color:var(--danger)">Sign out</div><p class="m" style="margin-top:20px">ZimGo · Pay cash to your driver</p>`;$('#dr').hidden=false}
 async function showHist(){
  $('#drp').innerHTML='<h3>Ride history</h3><p class="m">Loading…</p>';
  try{const s=await R_.where(me.role==='driver'?'driver':'pax','==',me.uid).get();
@@ -2361,7 +2361,7 @@ if(window.ZG_OPEN){trafficToggle=function(){toast('Live traffic is not available
 /* Built-in places shown on the map and in search for everyone. Add one per line: ["Place name", latitude, longitude] */
 window.ZG_SEED=window.ZG_SEED||[
 ];
-function s_seed(v){const ts=v.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!ts.length||v.trim().length<2)return[];return(window.ZG_SEED||[]).filter(p=>ts.every(t=>p[0].toLowerCase().includes(t))).map(p=>({lat:p[1],lng:p[2],name:p[0],sub:'Zimbabwe',_zg:1}))}
+function s_seed(v){const ts=v.trim().toLowerCase().split(/\s+/).filter(Boolean);if(!ts.length||v.trim().length<2)return[];return(window.ZG_SEED||[]).filter(p=>ts.every(t=>p[0].toLowerCase().includes(t))).map(p=>({lat:p[1],lng:p[2],name:p[0],sub:townOf(p[1],p[2]),_zg:1}))}
 /* ============ MORE PLACES: deep search of OpenStreetMap, places on the map, and ZimGo community places ============ */
 const _OV=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
 async function ovq(ql){for(const h of _OV){try{const r=await fetch(h,{method:'POST',body:'data='+encodeURIComponent(ql),headers:{'Content-Type':'application/x-www-form-urlencoded'}});if(!r.ok)continue;return(await r.json()).elements||[]}catch(e){}}throw new Error('overpass')}
@@ -2374,7 +2374,7 @@ async function s_over(v,c,wide){const ws=v.toLowerCase().replace(/[^a-z0-9 ]/g,'
 async function s_comm(v){const q=v.trim().toLowerCase();if(q.length<2)return[];const ts=q.split(/\s+/).filter(Boolean),qn=q.replace(/[^a-z0-9]/g,''),out=[];
  for(const p of _cm){const nm=(p.name||'').toLowerCase(),hay=nm+' '+(p.alias||'').toLowerCase()+' '+(p.addr||'').toLowerCase(),hn=hay.replace(/[^a-z0-9]/g,'');
   if(!(ts.every(t=>hay.includes(t))||(qn.length>=3&&hn.includes(qn))))continue;
-  out.push({lat:p.lat,lng:p.lng,name:p.name,sub:p.addr||'Zimbabwe',_zg:1,_s:(nm===q?0:nm.startsWith(q)?1:nm.includes(q)?2:3)+(p.adm?0:.5)})}
+  out.push({lat:p.lat,lng:p.lng,name:p.name,sub:p.addr||townOf(p.lat,p.lng),_zg:1,_s:(nm===q?0:nm.startsWith(q)?1:nm.includes(q)?2:3)+(p.adm?0:.5)})}
  return out.sort((a,b)=>a._s-b._s).slice(0,10)}
 function addPlaceFlow(n){window._addName=n;try{chooseOnMap()}catch(e){toast('Open the map and drop a pin where this place is.')}}
 async function savePlace(name,ll){try{const nl=name.trim().toLowerCase(),kw=[...new Set(nl.split(/\s+/).filter(w=>w.length>=2))];
@@ -2533,6 +2533,386 @@ function nvTick(){const r=typeof ride!=='undefined'&&ride;if(typeof me==='undefi
  const rem=Math.max(0,NV.tot-prog),mins=Math.max(1,Math.round(NV.dur/60*rem/(NV.tot||1))),b=document.getElementById('zgnav');
  if(b){b.classList.toggle('warn',!!NV.warn);b.innerHTML=`<div class="r"><div class="ar">${ar}</div><div><b>${dn>=1000?(dn/1000).toFixed(1)+' km':Math.round(dn/10)*10+' m'} · ${act}</b><small>${e&&e.name?esc(e.name):'Follow the blue route'}</small></div></div>${NV.warn?`<small>⚠ ${NV.warn}</small>`:''}<div class="ft"><span>${rem.toFixed(1)} km left · ${mins} min</span><span>${Math.round(sp*3.6)} km/h</span></div>`;b.classList.add('on')}}
 setInterval(()=>{try{nvTick()}catch(e){}},1000);
+
+
+/* ============ ZIMGO ORIGINALS: town labels, spoken route preview, split fare, safety shield, driver break reminder ============ */
+function townOf(la,lo){let b=null,bd=45;PASS.forEach(t=>{const d=kmB(la,lo,t[1],t[2]);if(d<bd){bd=d;b=t[0]}});return b?b+', Zimbabwe':'Zimbabwe'}
+{const _s9=searchAll;searchAll=async function(v){return(await _s9(v)).map(x=>x&&x.lat!=null&&(!x.sub||x.sub==='Zimbabwe')?{...x,sub:townOf(+x.lat,+x.lng)}:x)}}
+let _rvk='';
+{const _rv=routeView;routeView=function(){_rv.apply(this,arguments);try{if(!rt)return;const k=rt.mins+'|'+rt.km.toFixed(1)+'|'+(drop&&drop.name);if(k!==_rvk){_rvk=k;say(`About ${rt.mins} ${rt.mins===1?'minute':'minutes'}, ${rt.km.toFixed(1)} kilometres. Suggested fare ${Math.round(price*100)/100} dollars.`)}
+ const w=document.querySelector('.pcw');if(w&&!document.getElementById('zsp'))w.insertAdjacentHTML('afterend','<button id="zsp" class="lnk" onclick="splitFare()">Split the fare with friends</button>')}catch(e){}}}
+async function splitFare(){const i=await modal('Split the fare between how many people?',['2','3','4','5']);if(i===null)return;const n=i+2,each=Math.ceil(price/n*100)/100,t=`🚗 ZimGo ride split\nTrip: ${here&&here.name||'Pickup'} → ${drop&&drop.name}\nFare ${money(price)} ÷ ${n} = ${money(each)} each. Pay your share to the driver in cash or send it to me.`;window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
+document.head.insertAdjacentHTML('beforeend','<style>#zsos{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 76px);z-index:65;width:46px;height:46px;border-radius:50%;border:0;background:#d92d20;color:#fff;font-size:21px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none}#zsos.on{display:block}</style>');
+document.body.insertAdjacentHTML('beforeend','<button id="zsos" aria-label="Safety shield" onclick="sosOpen()">🛡</button>');
+setInterval(()=>{const b=document.getElementById('zsos');if(b)b.classList.toggle('on',!!(typeof ride!=='undefined'&&ride&&typeof me!=='undefined'&&me&&me.role!=='driver'&&['accepted','arrived','ongoing'].includes(ride.status)))},1500);
+async function sosOpen(){const i=await modal('Safety shield',['Alert my trusted contact','Call police (995)','Call ambulance (994)','Set trusted contact']);if(i===null)return;
+ if(i===1){location.href='tel:995';return}if(i===2){location.href='tel:994';return}
+ let tc=localStorage.zg_tc||'';if(i===3||!tc){tc=(prompt('Trusted contact WhatsApp number with country code, e.g. 263771234567',tc)||'').replace(/\D/g,'');if(tc)localStorage.zg_tc=tc;if(i===3||!tc)return}
+ const r=ride,l=(r&&r.dLoc)||here,t=`🚨 I need help on my ZimGo trip.\nDriver: ${r.driverName||''}\nCar: ${r.driverCar||''} ${r.driverPlate||''}\nFrom: ${r.pickup&&r.pickup.name}\nTo: ${r.drop&&r.drop.name}\n${l?'Live location: https://www.google.com/maps?q='+l.lat+','+l.lng:''}\nPlease call me now.`;
+ window.open('https://wa.me/'+tc+'?text='+encodeURIComponent(t),'_blank');say('Alert ready to send.')}
+let _on0=0;setInterval(()=>{if(typeof me==='undefined'||!me||me.role!=='driver'||!online){_on0=0;return}if(!_on0)_on0=Date.now();if(Date.now()-_on0>3*3600e3){_on0=Date.now();say('You have been online for three hours. Please take a short break.');toast('Take a short break')}},60000);
+/* ============ APP LANGUAGE: EN / SN / ZL (voice stays English) ============ */
+const I18=(()=>{const m={};`Name your fare. Ride anywhere.|Taura mutengo wako. Famba kwose kwose.|Chaza intengo yakho. Hamba noma ngaphi.
+Name your fare. Ride anywhere in Zimbabwe.|Taura mutengo wako. Famba kwose muZimbabwe.|Chaza intengo yakho. Hamba noma ngaphi eZimbabwe.
+Pickup point|Pokutorerwa|Indawo yokuthatha
+Your route|Nzira yako|Indlela yakho
+Choose on map|Sarudza pamepu|Khetha kumephu
+Fair fares|Mitengo yakarurama|Intengo ezifanele
+Verified drivers|Vatyairi vakasimbiswa|Abashayeli abaqinisekisiwe
+Pay cash|Bhadhara nemari|Khokha ngemali
+Cash|Mari|Imali
+I agree to the|Ndinobvuma|Ngiyavuma
+Terms & Conditions|Mitemo neMamiriro|Imigomo Nemibandela
+Privacy Policy|Mutemo wePrivacy|Inqubomgomo Yobumfihlo
+Sign in|Pinda|Ngena
+Continue with Google|Enderera neGoogle|Qhubeka neGoogle
+New here? Create account|Mutsva here? Vhura account|Umusha lapha? Vula i-akhawunti
+Forgot password?|Wakanganwa password?|Ukhohlwe iphasiwedi?
+Cancel|Kanzura|Khansela
+Terms|Mitemo|Imigomo
+Appearance|Chitarisiko|Ukubukeka
+Preferences|Zvaunofarira|Okuthandayo
+Clear|Bvisa|Cisha
+Profile|Profile|Iphrofayela
+Save profile|Sevha profile|Londoloza iphrofayela
+Account|Account|I-akhawunti
+Sign out|Buda|Phuma
+Keep ride|Ramba uri murwendo|Gcina uhambo
+Ride history|Nhoroondo yerwendo|Umlando wohambo
+COMPLETED|RAPERA|KUPHELILE
+CANCELLED|YAKANZURWA|KUKHANSELIWE
+Completed|Rapera|Kuphelile
+Cancelled|Yakanzurwa|Kukhanseliwe
+No rides yet.|Hapana rwendo parwuno.|Awukabi nohambo okwamanje.
+Back|Dzokera|Emuva
+Could not load history.|Hatina kukwanisa kutora nhoroondo.|Ayikwazanga ukulayisha umlando.
+Auto-accept on|Kugamuchira zvega kuvhurwa|Ukwamukela ngokuzenzakalelayo kuvuliwe
+Cancel request|Kanzura chikumbiro|Khansela isicelo
+Decline|Kana|Yenqaba
+Accept|Gamuchira|Yamukela
+You've arrived|Wasvika|Ufikile
+Skip|Pfuura|Yeqa
+Cancel ride|Kanzura rwendo|Khansela uhambo
+City to city|Taundi kuenda kutaundi|Idolobha ukuya kwelinye
+City to City|Taundi kuenda kutaundi|Idolobha ukuya kwelinye
+Clear all|Bvisa zvese|Cisha konke
+Delete search?|Dzima search here?|Susa usesho?
+Remove|Bvisa|Susa
+Delete|Dzima|Susa
+Clear all history|Bvisa nhoroondo yese|Cisha wonke umlando
+No results. Try a nearby landmark or suburb.|Hapana zvawanikwa. Edza chiratidzo chiri pedyo kana dunhu.|Akukho okutholakele. Zama indawo eseduze noma isifunda.
+Search is unavailable right now.|Search haisi kushanda parizvino.|Usesho alutholakali okwamanje.
+Set destination|Isa kwaunoenda|Setha indawo oya kuyo
+Drag the map so the pin sits on where you're going.|Kweya mepu kuti pini igare pauri kuenda.|Hudula imephu ukuze iphini lihlale lapho uya khona.
+Confirm destination|Simbisa kwaunoenda|Qinisekisa indawo oya kuyo
+Affordable fares|Mitengo inobvira|Intengo engabizi
+Find drivers|Tsvaga vatyairi|Thola abashayeli
+Ride options|Sarudzo dzerwendo|Izinketho zohambo
+Comment for the driver|Mashoko kumutyairi|Umbono kumshayeli
+Save|Sevha|Londoloza
+Cancel pickup|Kanzura kutorwa|Khansela ukuthathwa
+Today|Nhasi|Namuhla
+Trips|Zvirwendo|Uhambo
+Go online to see passengers near you.|Vhura online kuti uone vafambi vari pedyo newe.|Ngena online ukuze ubone abagibeli abaseduze nawe.
+AUTO-ACCEPT|KUGAMUCHIRA ZVEGA|UKWAMUKELA OKUZENZAKALELAYO
+Counter|Pindura|Phendula
+No requests right now. They appear here instantly.|Hapana zvikumbiro parizvino. Zvinoonekwa pano pakarepo.|Azikho izicelo okwamanje. Ziyavela lapha ngokushesha.
+Recent comments|Mashoko achangobva|Ukuphawula kwakamuva
+Close|Vhara|Vala
+Share|Govera|Yabelana
+Got it|Ndanzwisisa|Ngiyakuthola
+Pending|Kuchamirira|Kuyalindwa
+Support|Rutsigiro|Ukwesekwa
+Legal|Zvemutemo|Okomthetho
+Add photo|Wedzera mufananidzo|Engeza isithombe
+Full name|Zita rizere|Igama eliphelele
+Phone number|Nhamba yefoni|Inombolo yocingo
+Email|Email|I-imeyili
+Save changes|Sevha shanduko|Londoloza izinguquko
+In an emergency, call the emergency services first.|Kana pane njodzi, fonera masevhisi enjodzi kutanga.|Uma kunesimo esiphuthumayo, shayela izinsiza zesimo esiphuthumayo kuqala.
+Police|Mapurisa|Amaphoyisa
+Fire|Moto|Umlilo
+Tips for passengers|Mazano kuvafambi|Amathiphu abagibeli
+Tips for drivers|Mazano kuvatyairi|Amathiphu abashayeli
+Contact us|Taurirana nesu|Xhumana nathi
+Danger zone|Nzvimbo yengozi|Indawo eyingozi
+Delete your account?|Dzima account yako here?|Susa i-akhawunti yakho?
+Privacy|Zvakavanzika|Ubumfihlo
+No trips yet|Hapana rwendo parwuno|Awukabi nohambo
+Your completed and cancelled trips will show here.|Zvirwendo zvakapera nezvakanzurwa zvichaonekwa pano.|Uhambo oluphelile nolukhanseliwe luzovela lapha.
+Vehicle|Mota|Imoto
+Number plate|Nhamba yemota|Inombolo yepleyiti
+Documents|Magwaro|Amadokhumenti
+How was your ride?|Rwendo rwako rwaiva sei?|Uhambo lwakho belunjani?
+Submit|Tumira|Thumela
+Trip completed|Rwendo rwapera|Uhambo seluphelile
+Rate your passenger|Ipa mufambi wako chikoro|Linganisa umgibeli wakho
+Send message|Tumira meseji|Thumela umlayezo
+Send|Tumira|Thumela
+Your conversations|Hurukuro dzako|Izingxoxo zakho
+No messages yet.|Hapana mameseji parizvino.|Awukabi nemilayezo.
+No messages yet|Hapana mameseji parizvino|Awukabi nemilayezo
+Popular trips|Zvirwendo zvinofarirwa|Uhambo oludumile
+Travel between towns. Name your fare.|Famba pakati petaundi. Taura mutengo wako.|Hamba phakathi kwamadolobha. Chaza intengo yakho.
+No ZimGo cars online near you right now.|Hapana motokari dzeZimGo dziri pedyo newe parizvino.|Azikho izimoto ze-ZimGo eziseduze nawe okwamanje.
+ZimGo cars near you|Motokari dzeZimGo dziri pedyo newe|Izimoto ze-ZimGo eziseduze nawe
+Show nearest car|Taridza motokari iri pedyo|Libonise imoto eseduze
+Place on the map|Nzvimbo iri pamepu|Indawo kumephu
+Go here|Enda pano|Hamba lapha
+Your driver has arrived|Mutyairi wako asvika|Umshayeli wakho usefikile
+Split the fare with friends|Govana mutengo nevamwe|Yabelana ngentengo nabangani
+Settings|Zvirongwa|Izilungiselelo
+Help|Alusa|Usizo
+Install app|Isa app|Faka i-app
+Messages|Mameseji|Imilayezo
+Notifications|Zvazivisa|Izaziso
+Safety|Kuchengeteka|Ukuphepha
+Calculating route…|Ndiri kuverenga nzira…|Ngibala indlela…
+Finding drivers…|Ndiri kutsvaga vatyairi…|Ngithola abashayeli…
+Ride cancelled|Rwendo rwakanzurwa|Uhambo lukhanseliwe
+Pickup cancelled|Kutorwa kwakanzurwa|Ukuthathwa kukhanseliwe
+Profile saved ✓|Profile yasevha ✓|Iphrofayela ilondoloziwe ✓
+Please fill in every field.|Ndapota zadza munda wese.|Sicela ugcwalise zonke izinkambu.
+Pick a destination first.|Sarudza kwaunoenda kutanga.|Khetha indawo oya kuyo kuqala.
+Enter a price first.|Isa mutengo kutanga.|Faka intengo kuqala.
+Passenger accepted your offer! 🎉|Mufambi agamuchira mutengo wako! 🎉|Umgibeli wamukele isiphakamiso sakho! 🎉
+Heavy traffic ahead|Motokari dzakawanda pamberi|Izimoto eziningi phambili
+Take a short break|Zorora zvishoma|Phumula kancane
+Location is not available.|Nzvimbo haiwanikwi.|Indawo ayitholakali.
+Search history cleared|Nhoroondo ye search yabviswa|Umlando wosesho ucishiwe
+Deleted.|Dzimwa.|Kususiwe.
+Thanks! Other drivers will be warned.|Tatenda! Vamwe vatyairi vachayambiswa.|Siyabonga! Abanye abashayeli bazaxwayiswa.
+Account or payment|Account kana kubhadhara|I-akhawunti noma inkokhelo
+Action needed|Zvinoda kuitwa|Kudingeka isenzo
+Add|Wedzera|Engeza
+Add a profile photo so drivers and passengers can recognise you.|Wedzera mufananidzo wako kuti vatyairi nevafambi vakuzive.|Engeza isithombe sephrofayela ukuze abashayeli nabagibeli bakubone.
+Add a short reason for the driver.|Wedzera chikonzero chipfupi kumutyairi.|Engeza isizathu esifushane kumshayeli.
+Add to Home Screen|Wedzera paHome Screen|Engeza kuHome Screen
+Add to Home screen|Wedzera paHome Screen|Engeza kuHome Screen
+Admin|Admin|Umlawuli
+Admins only.|Ndevevatariri chete.|Abaphathi kuphela.
+Alert my trusted contact|Yambira munhu wandinovimba naye|Xwayisa oyethembayo
+Call police (995)|Fonera mapurisa (995)|Shayela amaphoyisa (995)
+Call ambulance (994)|Fonera ambulance (994)|Shayela i-ambulense (994)
+All caught up|Zvese zvakatarirwa|Konke kusesikhathini
+Allow location access so we can find your pickup point.|Bvumira location kuti tiwane pokutorerwa.|Vumela indawo ukuze sithole indawo yokukuthatha.
+Allow microphone access to make voice calls.|Bvumira microphone kuti ufonere nezwi.|Vumela imakrofoni ukuze wenze amakholi ezwi.
+Ambulance|Ambulance|I-ambulense
+Call declined.|Kufona kwarambwa.|Ikholi yenqatshiwe.
+Call lost connection.|Kufona kwacheka.|Ikholi ilahlekelwe uxhumano.
+Change location permission in your browser or device settings.|Chinja mvumo yelocation mumasettings eblowser kana efoni.|Shintsha imvume yendawo kuzilungiselelo zesiphequluli noma sedivayisi.
+Changed my plans|Ndachinja zvirongwa|Ngishintshe amacebo
+Chat opens once a driver accepts the ride.|Chat inovhurwa mutyairi kana agamuchira rwendo.|Ingxoxo ivulwa uma umshayeli eyamukela uhambo.
+Chat reopens when this driver accepts your next ride.|Chat inovhurwa zvakare mutyairi uyu kana agamuchira rwendo rwunotevera.|Ingxoxo ivuleka kabusha uma lo mshayeli eyamukela uhambo olulandelayo.
+Collect|Gamuchira mari|Qoqa imali
+Colour + car, e.g. Silver Honda Fit|Ruvara + mota, semuenzaniso Silver Honda Fit|Umbala + imoto, isb. Silver Honda Fit
+Could not check. Try again.|Hatina kukwanisa kutarisa. Edza zvakare.|Ayikwazanga ukuhlola. Zama futhi.
+Could not delete the account. Try again.|Hatina kukwanisa kudzima account. Edza zvakare.|Ayikwazanga ukususa i-akhawunti. Zama futhi.
+Could not delete.|Hatina kukwanisa kudzima.|Ayikwazanga ukususa.
+Could not export your data.|Hatina kukwanisa kutora data yako.|Ayikwazanga ukuthumela idatha yakho.
+Could not get your live location.|Hatina kukwanisa kuwana nzvimbo yako yazvino.|Ayikwazanga ukuthola indawo yakho yamanje.
+Could not hear you. Try again.|Hatina kukunzwa. Edza zvakare.|Ayikuzwanga. Zama futhi.
+Could not load documents.|Hatina kukwanisa kutora magwaro.|Ayikwazanga ukulayisha amadokhumenti.
+Could not load messages.|Hatina kukwanisa kutora mameseji.|Ayikwazanga ukulayisha imilayezo.
+Could not load that place.|Hatina kukwanisa kutora nzvimbo iyi.|Ayikwazanga ukulayisha leyo ndawo.
+Could not load this chat.|Hatina kukwanisa kutora chat iyi.|Ayikwazanga ukulayisha le ngxoxo.
+Could not load this profile.|Hatina kukwanisa kutora profile iyi.|Ayikwazanga ukulayisha le phrofayela.
+Could not load your passport.|Hatina kukwanisa kutora passport yako.|Ayikwazanga ukulayisha iphasiphothi yakho.
+Could not load. Check that your Firestore rules allow admin access.|Hatina kukwanisa kutora. Tarisa kuti mitemo yeFirestore inobvumira admin.|Ayikwazanga ukulayisha. Hlola ukuthi imithetho ye-Firestore ivumela umlawuli.
+Could not remove photo.|Hatina kukwanisa kubvisa mufananidzo.|Ayikwazanga ukususa isithombe.
+Could not save that place.|Hatina kukwanisa kusevha nzvimbo iyi.|Ayikwazanga ukulondoloza leyo ndawo.
+Could not save. Check your admin permissions.|Hatina kukwanisa kusevha. Tarisa mvumo dzako dzeadmin.|Ayikwazanga ukulondoloza. Hlola izimvume zakho zomlawuli.
+Could not save. Try again.|Hatina kukwanisa kusevha. Edza zvakare.|Ayikwazanga ukulondoloza. Zama futhi.
+Could not send the email.|Hatina kukwanisa kutumira email.|Ayikwazanga ukuthumela i-imeyili.
+Could not send the report.|Hatina kukwanisa kutumira report.|Ayikwazanga ukuthumela umbiko.
+Could not send.|Hatina kukwanisa kutumira.|Ayikwazanga ukuthumela.
+Could not send. Try again.|Hatina kukwanisa kutumira. Edza zvakare.|Ayikwazanga ukuthumela. Zama futhi.
+Could not switch mode. Try again.|Hatina kukwanisa kuchinja mode. Edza zvakare.|Ayikwazanga ukushintsha imodi. Zama futhi.
+Could not update.|Hatina kukwanisa kuvandudza.|Ayikwazanga ukuvuselela.
+Could not use that photo. Try another one.|Hatina kukwanisa kushandisa mufananidzo uyu. Edza imwe.|Ayikwazanga ukusebenzisa lesi sithombe. Zama esinye.
+Current trip. Tap to chat|Rwendo rwazvino. Dzvanya kutaura|Uhambo lwamanje. Thepha ukuxoxa
+Describe your issue…|Tsanangura dambudziko rako…|Chaza inkinga yakho…
+Download started|Kudhawunirodha kwatanga|Ukulanda kuqalile
+Drag the map so the pin sits exactly on the place.|Kweya mepu kuti pini igare chaizvo panzvimbo.|Hudula imephu ukuze iphini lihlale ngqo endaweni.
+Driver asked me to cancel|Mutyairi akandikumbira kukanzura|Umshayeli ungicele ukukhansela
+Driver is too far|Mutyairi ari kure zvakanyanya|Umshayeli useqhelile kakhulu
+Driver verification|Kusimbiswa kwemutyairi|Ukuqinisekiswa komshayeli
+Drivers you ride with will appear here.|Vatyairi vamunofamba navo vachaonekwa pano.|Abashayeli ohamba nabo bazovela lapha.
+Drop a pin so everyone can find this place|Isa pini kuti vese vawane nzvimbo iyi|Beka iphini ukuze wonke umuntu athole le ndawo
+End|Pedzisa|Qeda
+Enter the details exactly as they appear on your licence.|Isa zvakananga sezviri pachitupa chako.|Faka imininingwane njengoba injalo kulayisense yakho.
+Finish or cancel your current ride first.|Pedza kana kanzura rwendo rwazvino kutanga.|Qeda noma ukhansele uhambo lwamanje kuqala.
+Finish your current trip first.|Pedza rwendo rwazvino kutanga.|Qeda uhambo lwamanje kuqala.
+Follow mode off|Follow mode yadzimwa|Imodi yokulandela icishiwe
+Following you|Ndiri kukutevera|Ngiyakulandela
+For security, sign in again and then delete your account.|Kuchengetedza, pinda zvakare wozodzima account yako.|Ngezizathu zokuphepha, ngena futhi bese ususa i-akhawunti yakho.
+General question|Mubvunzo wakajairika|Umbuzo ojwayelekile
+I confirm the information and documents I submitted are true and belong to me.|Ndinosimbisa kuti ruzivo nemagwaro andatumira ndezvechokwadi uye ndezvangu.|Ngiyaqinisekisa ukuthi ulwazi namadokhumenti engiwathumele aliqiniso futhi angawami.
+Licence expiry|Kupera kwechitupa|Ukuphelelwa yilayisense
+Licence no.|Nhamba yechitupa|Inombolo yelayisense
+Licence:|Chitupa:|Ilayisense:
+Live traffic is not available on the free map.|Traffic yazvino haiwanikwi pamepu yemahara.|Ithrafikhi ebukhoma ayitholakali kumephu yamahhala.
+Loading documents…|Ndiri kutora magwaro…|Silayisha amadokhumenti…
+Loading…|Ndiri kutora…|Iyalayisha…
+Long trip, so we switched to City to city|Rwendo rurefu, saka tachinjira kuCity to city|Uhambo lude, ngakho sishintshele ku-City to city
+Looking for ride requests…|Ndiri kutsvaga zvikumbiro zverwendo…|Ngifuna izicelo zohambo…
+Map could not open.|Mepu haina kuvhurika.|Imephu ayivulekanga.
+Map not ready.|Mepu haisati yagadzirira.|Imephu ayikabi isilungile.
+Maps by Google.|Mepu dzeGoogle.|Amamephu avela kuGoogle.
+Message|Meseji|Umlayezo
+Messages are kept for 5 days, then removed.|Mameseji anochengetwa mazuva mashanu, obviswa.|Imilayezo igcinwa izinsuku ezinhlanu, bese isuswa.
+Messages are only visible to you two, for this ride.|Mameseji anoonekwa nemi vaviri chete, parwendo urwu.|Imilayezo ibonwa nina nobabili kuphela, kulolu hambo.
+Messages are removed after 5 days. Chat reopens when this driver accepts a ride.|Mameseji anobviswa mushure memazuva mashanu. Chat inovhurwa mutyairi kana agamuchira rwendo.|Imilayezo isuswa ngemva kwezinsuku ezinhlanu. Ingxoxo ivuleka uma umshayeli eyamukela uhambo.
+Missed call from|Kufona kwakapotsa kubva kuna|Ikholi ephuthelwe evela ku
+NEW|NITSVA|OKUSHA
+New|Itsva|Okusha
+Name and phone number are required.|Zita nenhamba yefoni zvinodiwa.|Igama nenombolo yocingo kuyadingeka.
+New reply from ZimGo support|Mhinduro itsva kubva kuZimGo support|Impendulo entsha evela ku-ZimGo support
+No comments yet. Complete trips to collect ratings.|Hapana mashoko parizvino. Pedza zvirwendo kuti uwane zvikoro.|Akukho okuphawulwe okwamanje. Qeda uhambo ukuze uthole izilinganiso.
+No conversations yet|Hapana hurukuro parizvino|Azikho izingxoxo okwamanje
+No drivers are waiting for review.|Hapana vatyairi vakamirira kuongororwa.|Abekho abashayeli abalindele ukubuyekezwa.
+No messages|Hapana mameseji|Akukho milayezo
+No places yet. Tap “Add place”.|Hapana nzvimbo parizvino. Dzvanya “Add place”.|Azikho izindawo okwamanje. Thepha “Add place”.
+No results. Drag the map instead.|Hapana zvawanikwa. Kweya mepu panzvimbo.|Akukho okutholakele. Hudula imephu kunalokho.
+No results. Try "Choose on map".|Hapana zvawanikwa. Edza "Choose on map".|Akukho okutholakele. Zama "Choose on map".
+Not found.|Hazvina kuwanikwa.|Akutholakalanga.
+Notifications are blocked in your browser settings.|Zvazivisa zvakavharwa mumasettings eblowser.|Izaziso zivaliwe kuzilungiselelo zesiphequluli.
+Notifications are not supported on this device.|Zvazivisa hazvishandi pafoni iyi.|Izaziso azisekelwa kule divayisi.
+On iPhone or iPad:|PaiPhone kana iPad:|Ku-iPhone noma ku-iPad:
+Open the map and drop a pin where this place is.|Vhura mepu woisa pini panzvimbo iyi.|Vula imephu ubeke iphini lapho kuleyo ndawo.
+Other|Zvimwe|Okunye
+Payment:|Kubhadhara:|Inkokhelo:
+Phone|Foni|Ucingo
+Photo removed|Mufananidzo wabviswa|Isithombe sisusiwe
+Pickup location|Nzvimbo yokutorera|Indawo yokuthatha
+Place name, e.g. Shashi View Primary School|Zita renzvimbo, semuenzaniso Shashi View Primary School|Igama lendawo, isb. Shashi View Primary School
+Preparing your data…|Ndiri kugadzirira data yako…|Silungiselela idatha yakho…
+Preview needs the Google map.|Preview inoda mepu yeGoogle.|Ukubuka kudinga imephu yeGoogle.
+Problem with a ride|Dambudziko rerwendo|Inkinga yohambo
+Profile photo|Mufananidzo weprofile|Isithombe sephrofayela
+Profile photo updated|Mufananidzo weprofile wavandudzwa|Isithombe sephrofayela sivuselelwe
+Recent places cleared|Nzvimbo dzazvino dzabviswa|Izindawo zakamuva zicishiwe
+Recent places · hold to delete|Nzvimbo dzazvino · bata kuti udzime|Izindawo zakamuva · bamba ukuze ususe
+Recent places|Nzvimbo dzazvino|Izindawo zakamuva
+Reject|Kana|Nqaba
+Report a road hazard|Ratidza njodzi yemugwagwa|Bika ingozi emgwaqweni
+Reset link sent to|Link yekuseta zvakare yatumirwa ku|Isixhumanisi sokusetha kabusha sithunyelwe ku
+Return with the same driver: about|Dzoka nemutyairi mumwe chete: anenge|Buya nomshayeli ofanayo: cishe
+Review documents|Ongorora magwaro|Buyekeza amadokhumenti
+Ride|Rwendo|Uhambo
+Ride to a town to earn its stamp. Every completed trip counts.|Famba kutaundi kuti uwane sitampu yaro. Rwendo rwese rwakapera runoverengwa.|Hamba uye edolobheni ukuze uthole isitembu salo. Wonke uhambo oluphelile luyabalwa.
+Safe journey. Fambai zvakanaka.|Fambai zvakanaka.|Hambani kahle.
+Safety concern|Kunetseka nekuchengeteka|Ukukhathazeka ngokuphepha
+Safety shield|Nhoo yekuchengetedza|Isihlangu sokuphepha
+Saved|Yasevha|Kulondoloziwe
+Scroll and tap|Scrolla woisa chigunwe|Skrola bese uthepha
+Search places|Tsvaga nzvimbo|Sesha izindawo
+Search to jump the map there…|Tsvaga kuti mepu iende ikoko…|Sesha ukuze imephu iye lapho…
+Searching…|Ndiri kutsvaga…|Iyasesha…
+Sent. We will reply here.|Zvatumirwa. Tichapindura pano.|Kuthunyelwe. Sizophendula lapha.
+Set trusted contact|Isa munhu wauno vimba naye|Setha oyethembayo
+Set your own hours and earn on every trip. Verification keeps passengers and drivers safe.|Sarudza maawa ako uwane pane rwendo rwese. Kusimbiswa kunochengetedza vafambi nevatyairi.|Setha amahora akho uthole kuyo yonke inkambo. Ukuqinisekisa kugcina abagibeli nabashayeli bephephile.
+Signed in with|Wakapinda ne|Ungene nge
+Split the fare between how many people?|Govana mutengo pakati pevanhu vangani?|Yabelana ngentengo phakathi kwabantu abangaki?
+Submitted for review|Yatumirwa kuongororwa|Kuthunyelwe ukuze kubuyekezwe
+Switch to Driver mode from the menu to start accepting rides.|Chinjira kuDriver mode kubva pamenyu kuti utange kugamuchira zvirwendo.|Shintshela kuDriver mode kumenyu ukuze uqale ukwamukela uhambo.
+Take a live selfie now so we can match your face to your licence and profile photo.|Tora selfie yazvino kuti titarise kuti kumeso kwako kunofanana nechitupa neprofile photo.|Thatha i-selfie ngokubukhoma ukuze sifanise ubuso bakho nelayisense nesithombe sephrofayela.
+Takes about 5 minutes. Your documents are only seen by our review team.|Inotora anenge maminiti mashanu. Magwaro ako anoonekwa neboka redu rekuongorora chete.|Kuthatha cishe imizuzu emihlanu. Amadokhumenti akho abonwa yithimba lethu lokubuyekeza kuphela.
+Taking long? Use a normal phone call|Ndiri kunonoka here? Shandisa kufona kwakajairika|Kuthatha isikhathi eside? Sebenzisa ikholi evamile
+Tap|Dzvanya|Thepha
+Tap the|Dzvanya|Thepha i
+Tap to change your photo|Dzvanya kuchinja mufananidzo wako|Thepha ukushintsha isithombe sakho
+Tell us what you need. Our team replies right here in the app.|Tizivise zvaunoda. Boka redu rinopindura pano muapp.|Sitshele ukuthi ufunani. Ithimba lethu liphendula lapha ku-app.
+Tell your driver what to expect|Ziva mutyairi wako zvaanotarisira|Tshela umshayeli wakho okufanele akulindele
+Thanks! ZimGo now knows|Tatenda! ZimGo yava kuziva|Siyabonga! I-ZimGo manje iyazi
+Thanks, confirmed.|Tatenda, zvasimbiswa.|Siyabonga, kuqinisekisiwe.
+Thanks, removed.|Tatenda, zvabviswa.|Siyabonga, kususiwe.
+The passenger cancelled the ride.|Mufambi akanzura rwendo.|Umgibeli ukhansele uhambo.
+This conversation is closed. Send a new message if you still need help.|Hurukuro iyi yavharwa. Tumira meseji itsva kana uchida alusa.|Le ngxoxo ivaliwe. Thumela umlayezo omusha uma usadinga usizo.
+Trip details copied. Paste them to a friend.|Ruzivo rwerwendo rwakopiwa. Ruisei kushamwari.|Imininingwane yohambo ikopishiwe. Ibeke kumngani.
+Try another spelling or a nearby landmark.|Edza mamwe mapelero kana chiratidzo chiri pedyo.|Zama olunye uhlelo lokupela noma indawo eseduze.
+Turn on location access.|Vhura mvumo yelocation.|Vula imvume yendawo.
+Turn on location first.|Vhura location kutanga.|Vula indawo kuqala.
+Turn on location to drive with|Vhura location kuti utyaire ne|Vula indawo ukuze ushayele nge
+Turn on location to drive with ZimGo.|Vhura location kuti utyaire neZimGo.|Vula indawo ukuze ushayele ne-ZimGo.
+Type the place name.|Nyora zita renzvimbo.|Thayipha igama lendawo.
+Type your message first.|Nyora meseji yako kutanga.|Thayipha umlayezo wakho kuqala.
+Upload clear, readable photos. All four corners of the document should be visible.|Isa mifananidzo yakajeka. Makona mana ose edokumendi anofanira kuonekwa.|Layisha izithombe ezicacile. Wonke amakhona amane edokhumenti kufanele abonakale.
+Upload failed. Check your connection and try again.|Kuisa kwakundikana. Tarisa internet woedza zvakare.|Ukulayisha kuhlulekile. Hlola uxhumano lwakho bese uzama futhi.
+Uploading your documents. Please wait…|Ndiri kuisa magwaro ako. Ndapota mirira…|Silayisha amadokhumenti akho. Sicela ulinde…
+Vehicle:|Mota:|Imoto:
+Voice calls are not supported on this browser.|Kufona kwezwi hakushandi pablowser iyi.|Amakholi ezwi awasekelwa kulesi siphequluli.
+Voice search is not supported on this phone.|Voice search haishandi pafoni iyi.|Usesho ngezwi alusekelwe kule foni.
+Waiting for driver offers…|Ndiri kumirira mitengo yevatyairi…|Silinda iziphakamiso zabashayeli…
+Waiting for your location…|Ndiri kumirira nzvimbo yako…|Silinda indawo yakho…
+We could not approve your documents.|Hatina kukwanisa kubvumidza magwaro ako.|Asikwazanga ukuvuma amadokhumenti akho.
+What you will need|Zvauchada|Okuzodingeka
+Where to?|Uri kuenda kupi?|Uya kuphi?
+Why are you cancelling?|Sei uri kukanzura?|Kungani ukhansela?
+Write a reply…|Nyora mhinduro…|Bhala impendulo…
+Wrong pickup or destination|Kutorerwa kana kwaunoenda zvakakanganisa|Indawo yokuthatha noma oya kuyo ayilunganga
+Yes, delete my account|Ehe, dzima account yangu|Yebo, susa i-akhawunti yami
+You are a verified driver.|Uri mutyairi akasimbiswa.|Ungumshayeli oqinisekisiwe.
+You can call once a driver accepts the ride.|Unogona kufona mutyairi kana agamuchira rwendo.|Ungashayela uma umshayeli eyamukela uhambo.
+Your account was deleted|Account yako yadzimwa|I-akhawunti yakho isusiwe
+Your chats with drivers show here for 5 days.|Hurukuro dzako nevatyairi dzinoonekwa pano mazuva mashanu.|Izingxoxo zakho nabashayeli ziyabonakala lapha izinsuku ezinhlanu.
+Your documents are under review.|Magwaro ako ari kuongororwa.|Amadokhumenti akho ayabuyekezwa.
+Your driver cancelled. Finding you another driver…|Mutyairi wako akanzura. Ndiri kukutsvagira mumwe…|Umshayeli wakho ukhansele. Sikuthola omunye…
+Your driver looks off the planned route. Share your trip if you feel unsafe.|Mutyairi wako anoita kunge adzoka panzira. Govera rwendo rwako kana usina kuchengeteka.|Umshayeli wakho ubonakala ephambukile endleleni. Yabelana ngohambo lwakho uma uzizwa ungaphephile.
+Your pickup pin is at:|Pini yokutorerwa kwako iri pa:|Iphini lakho lokuthathwa likhona:
+Your price|Mutengo wako|Intengo yakho
+ZimGo installed|ZimGo yaiswa|I-ZimGo ifakiwe
+ZimGo · Pay cash to your driver|ZimGo · Bhadhara mutyairi nemari|ZimGo · Khokha umshayeli ngemali
+and|ne|futhi
+e.g. I'm at the gate, wearing red|semuenzaniso Ndiri pagedhi, ndakapfeka tsvuku|isb. Ngisesangweni, ngigqoke obomvu
+each|mumwe nemumwe|ngamunye
+in total|pamwe chete|isiyonke
+from your recent places?|kubva munzvimbo dzako dzazvino?|ezindaweni zakho zakamuva?
+to the driver at the end of the trip.|kumutyairi pakupera kwerwendo.|kumshayeli ekupheleni kohambo.
+Auto-accept offers by default|Gamuchira mitengo zvega|Yamukela iziphakamiso ngokuzenzakalelayo
+Vibrate on alerts|Dengenyeka kana pane yambiro|Dlidlizela uma kunezaziso
+Call|Fona|Shayela
+Call driver|Fona mutyairi|Shayela umshayeli
+Navigate|Tungamira|Qondisa
+Pothole|Gomba mumugwagwa|Imbobo emgwaqweni
+Police roadblock|Roadblock yemapurisa|Isivimbelo samaphoyisa
+Accident|Ngozi|Ingozi
+Flooded road|Mugwagwa une mvura|Umgwaqo ogcwele amanzi
+Animals on the road|Mhuka mumugwagwa|Izilwane emgwaqweni
+Still there|Zvichiripo|Kusekhona
+It is gone|Zvaenda|Kuhambile`.split('\n').forEach(l=>{const a=l.split('|');if(a.length===3)m[a[0]]=[a[1],a[2]]});return m})();
+const LG={l:(typeof localStorage!=='undefined'&&localStorage.zg_lang)||'en'},_lo=new WeakMap();let _lObs=null,_lT=0;
+const trL=(v,l)=>{const hz=/^(Pothole|Police roadblock|Accident|Flooded road|Animals on the road) reported here\. Is it still there\?$/.exec(v.trim());if(hz){const e=I18[hz[1]],q=l==='sn'?['yakaratidzwa pano. Ichiripo here?']:['kubikiwe lapha. Kusekhona yini?'];return (l==='sn'?e[0]:e[1])+' '+q[0]}const m=/^(\s*[^A-Za-z]*?)([A-Za-z][\s\S]*?)(\s*)$/.exec(v);if(!m)return v;const e=I18[m[2]];return e?m[1]+e[l==='sn'?0:1]+m[3]:v};
+function langApply(){try{const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentNode&&(/^(SCRIPT|STYLE|TEXTAREA|NOSCRIPT)$/.test(n.parentNode.nodeName)||(n.parentNode.closest&&n.parentNode.closest('.gm-style,.gmnoprint')))?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});let n;
+ while(n=w.nextNode()){let r=_lo.get(n);if(r&&n.nodeValue!==r.t)r=null;if(!r){r={o:n.nodeValue,t:n.nodeValue};_lo.set(n,r)}const t=LG.l==='en'?r.o:trL(r.o,LG.l);if(n.nodeValue!==t)n.nodeValue=t;r.t=t}
+ document.querySelectorAll('[placeholder]').forEach(e=>{if(e.dataset.ph==null)e.dataset.ph=e.placeholder;const t=LG.l==='en'?e.dataset.ph:trL(e.dataset.ph,LG.l);if(e.placeholder!==t)e.placeholder=t})}catch(e){}}
+function setLang(l){LG.l=l;try{localStorage.zg_lang=l}catch(e){}document.documentElement.dataset.lang=l;langApply();if(_lObs){_lObs.disconnect();_lObs=null}
+ if(l!=='en'){_lObs=new MutationObserver(()=>{clearTimeout(_lT);_lT=setTimeout(langApply,150)});_lObs.observe(document.body,{childList:true,subtree:true,characterData:true})}}
+const LTOG='<div class="di zglw"><span class="zgl"><button data-l="en">En</button><button data-l="sn">Sn</button><button data-l="zu">Zu</button></span></div>';
+document.head.insertAdjacentHTML('beforeend','<style>html .zgl{display:inline-flex;align-items:center;gap:2px;padding:5px;border-radius:999px;background:#eceef4;box-shadow:0 6px 18px rgba(8,18,50,.35)}html .zgl button{background:none;border:0;border-radius:999px;color:#4a5578;padding:9px 15px;font-weight:800;font-size:14px;font-family:inherit;min-width:46px}html[data-lang=en] .zgl [data-l=en],html[data-lang=sn] .zgl [data-l=sn],html[data-lang=zu] .zgl [data-l=zu]{background:linear-gradient(135deg,#2563eb,#1240b0);color:#fff;box-shadow:0 5px 14px rgba(37,99,235,.55)}#zgtop{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:12px;z-index:600;display:none}#zgtop .zgl{padding:4px}#zgtop .zgl button{padding:7px 12px;font-size:13px;min-width:40px}#zgla{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:5}</style>');
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.zgl [data-l]');if(b)setLang(b.dataset.l)});
+{const a=document.getElementById('auth');if(a)a.insertAdjacentHTML('afterbegin','<div id="zgla"><span class="zgl"><button data-l="en">En</button><button data-l="sn">Sn</button><button data-l="zu">Zu</button></span></div>')}
+{const _om4=openMenu;openMenu=function(){_om4();const d=document.querySelector('#drp .dl');if(d&&!d.querySelector('.zglw'))d.insertAdjacentHTML('beforeend',LTOG)}}
+document.body.insertAdjacentHTML('beforeend','<div id="zgtop"><span class="zgl"><button data-l="en">En</button><button data-l="sn">Sn</button><button data-l="zu">Zu</button></span></div>');
+setInterval(()=>{const z=document.getElementById('zgtop'),t=document.getElementById('top'),n=document.getElementById('zgnav');if(z)z.style.display=(typeof me!=='undefined'&&me&&!(t&&!t.hidden)&&!(n&&n.classList.contains('on')))?'block':'none'},600);
+setLang(LG.l);
+/* ============ ROAD HAZARDS: map markers, voice warning, still-there / gone ============ */
+let HZ=[];const HZK=['pothole','roadblock','accident','flood','animals'],HZN=['Pothole','Police roadblock','Accident','Flooded road','Animals on the road'],HZT=['Pothole ahead.','Police roadblock ahead.','Accident ahead.','Flooded road ahead.','Animals on the road ahead.'],HZW={},HZM={},
+ HZC={pothole:['🕳️','#f5a623'],roadblock:['🚧','#2a8cf0'],accident:['💥','#e5484d'],flood:['🌊','#2a8cf0'],animals:['🐄','#9a7b4f']};
+function hzIcon(k){const[g,c]=HZC[k]||['⚠','#f5a623'];return svgI(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48"><path d="M20 46C20 46 4 30 4 18a16 16 0 0 1 32 0c0 12-16 28-16 28z" fill="#fff" stroke="${c}" stroke-width="3"/><text x="20" y="25" font-size="16" text-anchor="middle">${g}</text></svg>`,34,41,17,40)}
+function hzDraw(){try{if(typeof map==='undefined'||!map||!window.google)return;const ids=new Set(HZ.map(z=>z.id));Object.keys(HZM).forEach(id=>{if(!ids.has(id)){HZM[id].setMap(null);delete HZM[id]}});
+ HZ.forEach(z=>{if(HZM[z.id])return;const ic=hzIcon(z.k);if(!ic)return;const m=new google.maps.Marker({map,position:{lat:z.lat,lng:z.lng},icon:ic,zIndex:4,title:HZN[HZK.indexOf(z.k)]});m.addListener('click',()=>hzConfirm(z));HZM[z.id]=m})}catch(e){}}
+async function hzLoad(){try{const d=((await db.collection('presence').doc('hz').get()).data()||{}).d||{};HZ=Object.entries(d).map(([id,h])=>({id,...h})).filter(h=>Date.now()-h.t<(h.k==='pothole'?14*864e5:4*36e5));hzDraw()}catch(e){}}
+async function hzReport(){const i=await modal('Report a road hazard',HZN);if(i===null)return;const g=window._gps,l=g?g.ll:here;if(!l)return toast('Turn on location first.');
+ const id='h'+Date.now().toString(36),h={lat:l.lat,lng:l.lng,k:HZK[i],t:Date.now()};try{await db.collection('presence').doc('hz').set({d:{[id]:h}},{merge:true});HZ.push({id,...h});HZW[id]=1;hzDraw();toast('Thanks! Other drivers will be warned.')}catch(e){toast('Could not send the report.')}}
+async function hzConfirm(z){const i=await modal(HZN[HZK.indexOf(z.k)]+' reported here. Is it still there?',['Still there','It is gone']);if(i===null)return;
+ try{const R=db.collection('presence').doc('hz');if(i===0){await R.update({['d.'+z.id+'.t']:Date.now()});z.t=Date.now();toast('Thanks, confirmed.')}else{await R.update({['d.'+z.id]:firebase.firestore.FieldValue.delete()});HZ=HZ.filter(h=>h.id!==z.id);hzDraw();toast('Thanks, removed.')}}catch(e){toast('Could not update.')}}
+document.head.insertAdjacentHTML('beforeend','<style>#zhz{position:fixed;right:12px;top:46%;z-index:65;width:46px;height:46px;border-radius:50%;border:0;background:#f5a623;color:#111;font-size:21px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none}#zhz.on{display:block}</style>');
+document.body.insertAdjacentHTML('beforeend','<button id="zhz" aria-label="Report road hazard" onclick="hzReport()">⚠</button>');
+setInterval(()=>{const on=typeof me!=='undefined'&&me&&me.role==='driver'&&typeof online!=='undefined'&&online,b=document.getElementById('zhz');b&&b.classList.toggle('on',!!on);
+ const g=window._gps;if(!on||!g||Date.now()-g.t>20000)return;const h=typeof lastHead!=='undefined'?lastHead:0;
+ HZ.forEach(z=>{if(HZW[z.id])return;const d=kmB(g.ll.lat,g.ll.lng,z.lat,z.lng);if(d>.4)return;const dd=Math.abs(((brg(g.ll,z)-h+540)%360)-180);if(dd<60||(g.sp||0)<1.5&&d<.15){HZW[z.id]=1;say(HZT[HZK.indexOf(z.k)]);toast(HZT[HZK.indexOf(z.k)])}})},3000);
+setInterval(()=>{if(typeof me!=='undefined'&&me)hzLoad()},60000);setTimeout(()=>{try{hzLoad()}catch(e){}},6000);
 
 /* ============ small map extras ============ */
 </script>
