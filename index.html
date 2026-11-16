@@ -669,6 +669,7 @@ firebase.initializeApp({
   appId: "1:594530032327:web:2073fe4286a9ff6728bce2"
 });
 const auth=firebase.auth(),db=firebase.firestore(),TS=()=>firebase.firestore.FieldValue.serverTimestamp();
+try{db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
 const $=s=>document.querySelector(s),sh=h=>{$('#sheet').innerHTML=h?`<div class="sc">${h}</div>`:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const money=n=>'$'+(+n).toFixed(2);
@@ -870,11 +871,13 @@ async function go(){
  }catch(x){sg=0;$('#err').textContent=String(x.message).replace('Firebase: ','')}
 }
 auth.onAuthStateChanged(async u=>{
- if(sg)return;await mapReady;
- if(!u){clean();authReset();me=null;$('#auth').hidden=false;['#menu','#top','#pin','#loc'].forEach(s=>$(s).hidden=true);sh('');clrMap();return}
- const s=await db.collection('users').doc(u.uid).get();
- if(!s.exists){showComplete(u);return}
- me={...s.data(),uid:u.uid};boot();
+ if(sg){window._zgAuth=1;return}
+ try{await Promise.race([mapReady,new Promise(r=>setTimeout(r,2500))]);
+ if(!u){try{localStorage.removeItem('zg_me')}catch(e){}clean();authReset();me=null;$('#auth').hidden=false;['#menu','#top','#pin','#loc'].forEach(s=>$(s).hidden=true);sh('');try{clrMap()}catch(e){}return}
+ let d=null,miss=false;try{const s=await db.collection('users').doc(u.uid).get();if(s.exists){d=s.data();try{localStorage.zg_me=JSON.stringify({uid:u.uid,d})}catch(e){}}else miss=true}catch(e){}
+ if(!d&&!miss){try{const c=JSON.parse(localStorage.zg_me||'null');if(c&&c.uid===u.uid)d=c.d}catch(e){}}
+ if(!d){if(miss)showComplete(u);return}
+ me={...d,uid:u.uid};boot()}finally{window._zgAuth=1}
 });
 function clean(){U.forEach(f=>f());U=[];offU&&offU();offU=null;openU&&openU();openU=null;if(W){navigator.geolocation.clearWatch(W);W=null}ride=null;online=false;drop=null;rt=null;stage='idle';hadRide=false;prevSt=null;SENT={};DECL={};$('#md').hidden=true;$('#srch').hidden=true}
 function boot(){
@@ -1854,9 +1857,7 @@ async function supReply(id){const i=$('#tr'),m=i.value.trim();if(!m)return;i.val
 /* ================= ZimGo v4 features ================= */
 ICO.work='<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0110.5 4h3A1.5 1.5 0 0115 5.5V7M3 13h18"/>';
 /* splash */
-(function(){const sp=document.getElementById('splash');if(!sp)return;const t0=performance.now();let done=0;
- const hide=()=>{if(done)return;done=1;setTimeout(()=>{sp.classList.add('out');setTimeout(()=>sp.remove(),600)},Math.max(0,1000-(performance.now()-t0)))};
- document.readyState==='complete'?hide():addEventListener('load',hide);setTimeout(hide,4500)})();
+(function(){const sp=document.getElementById('splash');if(!sp)return;const t0=performance.now();let done=0;const chk=()=>{if(done)return;const e=performance.now()-t0;if(e>=3000&&(window._zgAuth||e>8000)){done=1;sp.classList.add('out');setTimeout(()=>sp.remove(),600)}else setTimeout(chk,150)};chk()})();
 /* online / offline banner */
 (function(){const n=document.getElementById('net');let t;
  const up=()=>{n.textContent='Back online';n.className='show up';clearTimeout(t);t=setTimeout(()=>n.className='',2200)};
@@ -2880,7 +2881,10 @@ Accident|Ngozi|Ingozi
 Flooded road|Mugwagwa une mvura|Umgwaqo ogcwele amanzi
 Animals on the road|Mhuka mumugwagwa|Izilwane emgwaqweni
 Still there|Zvichiripo|Kusekhona
-It is gone|Zvaenda|Kuhambile`.split('\n').forEach(l=>{const a=l.split('|');if(a.length===3)m[a[0]]=[a[1],a[2]]});return m})();
+It is gone|Zvaenda|Kuhambile
+Create account|Vhura account|Vula i-akhawunti
+Have an account?|Une account here?|Unayo i-akhawunti?
+Made in Zimbabwe 🇿🇼 · Safe, fair rides|Yakagadzirwa muZimbabwe 🇿🇼 · Zvirwendo zvakachengeteka, zvakarurama|Yenziwe eZimbabwe 🇿🇼 · Uhambo oluphephile, olufanele`.split('\n').forEach(l=>{const a=l.split('|');if(a.length===3)m[a[0]]=[a[1],a[2]]});return m})();
 const LG={l:(typeof localStorage!=='undefined'&&localStorage.zg_lang)||'en'},_lo=new WeakMap();let _lObs=null,_lT=0;
 const trL=(v,l)=>{const hz=/^(Pothole|Police roadblock|Accident|Flooded road|Animals on the road) reported here\. Is it still there\?$/.exec(v.trim());if(hz){const e=I18[hz[1]],q=l==='sn'?['yakaratidzwa pano. Ichiripo here?']:['kubikiwe lapha. Kusekhona yini?'];return (l==='sn'?e[0]:e[1])+' '+q[0]}const m=/^(\s*[^A-Za-z]*?)([A-Za-z][\s\S]*?)(\s*)$/.exec(v);if(!m)return v;const e=I18[m[2]];return e?m[1]+e[l==='sn'?0:1]+m[3]:v};
 function langApply(){try{const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentNode&&(/^(SCRIPT|STYLE|TEXTAREA|NOSCRIPT)$/.test(n.parentNode.nodeName)||(n.parentNode.closest&&n.parentNode.closest('.gm-style,.gmnoprint')))?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});let n;
@@ -2914,6 +2918,14 @@ setInterval(()=>{const on=typeof me!=='undefined'&&me&&me.role==='driver'&&typeo
  HZ.forEach(z=>{if(HZW[z.id])return;const d=kmB(g.ll.lat,g.ll.lng,z.lat,z.lng);if(d>.4)return;const dd=Math.abs(((brg(g.ll,z)-h+540)%360)-180);if(dd<60||(g.sp||0)<1.5&&d<.15){HZW[z.id]=1;say(HZT[HZK.indexOf(z.k)]);toast(HZT[HZK.indexOf(z.k)])}})},3000);
 setInterval(()=>{if(typeof me!=='undefined'&&me)hzLoad()},60000);setTimeout(()=>{try{hzLoad()}catch(e){}},6000);
 
+document.head.insertAdjacentHTML('beforeend','<style>#auth{justify-content:flex-start;align-items:center;gap:0;background-image:radial-gradient(90% 55% at 90% 0%,rgba(255,255,255,.24),transparent 62%),radial-gradient(80% 50% at 0% 100%,rgba(3,12,36,.35),transparent 70%)}#auth>*:not(#zgla){width:100%;max-width:440px}#auth .amk{width:58px;margin:20px 0 0}#auth .logo{font-size:42px;margin:8px 0 4px}#auth #atag{font-size:16px;opacity:.93;margin:0 0 22px}#auth .acard{background:#fff;color:#0b1b3a;border-radius:26px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px rgba(4,14,40,.45)}#auth .atabs{display:grid;grid-template-columns:1fr 1fr;background:#eef2f9;border-radius:14px;padding:4px}#auth .atabs button{border:0;background:none;border-radius:11px;padding:11px;font:800 14px Inter,sans-serif;color:#5a6a8c}#auth .atabs button.on{background:#fff;color:#0d3d8c;box-shadow:0 2px 8px rgba(13,61,140,.18)}#auth .acard .af{color:#51618a}#auth .acard input{background:#f2f5fb;color:#0b1b3a;border:1.5px solid transparent;transition:border-color .15s,background .15s}#auth .acard input:focus{border-color:#2563eb;background:#fff}#auth .acard .btn.d{background:linear-gradient(135deg,#2f7bff,#0d3d8c);color:#fff;border-radius:14px;padding:16px;font-size:17px;box-shadow:0 10px 24px rgba(37,99,235,.4)}#auth .acard .gbtn{border:1.5px solid #dfe5f1;box-shadow:none}#auth .acard .or{color:#51618a}#auth .acard .lnk{color:#2563eb}#auth .acard .tos{color:#0b1b3a}#auth #tg{display:none}#auth .trust{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:20px 0 8px}#auth .trust span{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;font-size:12px;padding:11px 6px;border-radius:16px}#auth .trust span::before{font-size:20px}#auth .trust span:nth-child(1)::before{content:"💲"}#auth .trust span:nth-child(2)::before{content:"🛡️"}#auth .trust span:nth-child(3)::before{content:"💵"}#auth .legal{margin-top:6px}#auth .afoot{text-align:center;font-size:12px;opacity:.75;margin:10px 0 0;font-weight:600}</style>');
+(function(){const a=document.getElementById('auth');if(!a||a.dataset.v2)return;a.dataset.v2=1;const card=document.createElement('div');card.className='acard';
+ card.innerHTML='<div class="atabs"><button type="button" data-m="in">Sign in</button><button type="button" data-m="up">Create account</button></div>';
+ ['su','cred','tos','err','go','alt','tg','fg','cx'].forEach(id=>{const e=document.getElementById(id);e&&card.appendChild(e)});
+ const tr=a.querySelector('.trust'),lg=a.querySelector('.legal');a.insertBefore(card,lg);if(tr)card.after(tr);lg.insertAdjacentHTML('afterend','<p class="afoot">Made in Zimbabwe 🇿🇼 · Safe, fair rides</p>');
+ const sync=()=>card.querySelectorAll('.atabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode));
+ card.querySelector('.atabs').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.m!==mode)tgl()};
+ new MutationObserver(sync).observe(card.querySelector('#su'),{attributes:true});sync()})();
 /* ============ small map extras ============ */
 </script>
 </body></html>
