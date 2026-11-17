@@ -27,13 +27,13 @@ window.zgShim=function(){var ML=window.maplibregl,lines=[],pid=0;
   return{version:8,glyphs:GL,sources:{b:src('base',kind==='night'?'explore.night':'explore.day','© HERE')},layers:[{id:'b',type:'raster',source:'b'}]}}
  function isDark(){try{return!!(window.zgDark&&zgDark())}catch(e){return false}}
  var GT=window.ZG_TILES==='google',ZO=GT?0:1;
- var GSC=(window.devicePixelRatio||1)>=1.5?2:1;
- function gTiles(l){return[0,1,2,3].map(function(i){return'https://mt'+i+'.google.com/vt/lyrs='+l+'&hl=en&gl=ZW&scale='+GSC+'&x={x}&y={y}&z={z}'})}
- function gStyle(l){return{version:8,glyphs:GL,sources:{g:{type:'raster',tiles:gTiles(l),tileSize:256,maxzoom:20,attribution:'Map data © Google'}},layers:[{id:'g',type:'raster',source:'g',paint:{'raster-fade-duration':0}}]}}
+ var GSC=1;
+ function gTiles(l){return[0,1,2,3].map(function(i){return'https://mt'+i+'.google.com/vt/lyrs='+l+'&hl=en&x={x}&y={y}&z={z}'})}
+ function gStyle(l){return{version:8,glyphs:GL,sources:{g:{type:'raster',tiles:gTiles(l),tileSize:256,maxzoom:20,attribution:'Map data © Google'}},layers:[{id:'g',type:'raster',source:'g',paint:{'raster-fade-duration':120}}]}}
  var GSTREET=gStyle('m'),GSAT=gStyle('y');
  var SAT={version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},lab:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19}},layers:[{id:'sat',type:'raster',source:'sat'},{id:'lab',type:'raster',source:'lab'}]};
  function GMap(el,o){var c=(o&&o.center)||{lat:-17.8292,lng:31.0522};c=ll(c);this.el=el;this.sat=false;
-  this.m=new ML.Map({container:el,style:this.cur(),center:[c.lng,c.lat],zoom:((o&&o.zoom)||15)-ZO,maxZoom:21,minZoom:2,dragRotate:false,pitchWithRotate:false,attributionControl:{compact:true},fadeDuration:0,maxTileCacheSize:160,refreshExpiredTiles:false,renderWorldCopies:false});
+  this.m=new ML.Map({container:el,style:this.cur(),center:[c.lng,c.lat],zoom:((o&&o.zoom)||15)-ZO,maxZoom:21,minZoom:2,dragRotate:false,pitchWithRotate:false,attributionControl:{compact:true},fadeDuration:120,maxTileCacheSize:200,refreshExpiredTiles:false,renderWorldCopies:false,antialias:true});
   try{this.m.touchZoomRotate.disableRotation()}catch(e){}try{this.m.touchPitch.disable()}catch(e){}
   var G=this;this.m.on('style.load',function(){lines.slice().forEach(function(l){l._add()});G.th()});this.th()}
  GMap.prototype.cur=function(){var d=isDark();this.hk=d;if(window.ZG_HERE_KEY)return hereStyle(this.sat?'sat':(d?'night':'day'));if(GT)return this.sat?GSAT:GSTREET;return this.sat?SAT:STREET};

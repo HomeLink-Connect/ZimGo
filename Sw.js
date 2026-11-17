@@ -1,13 +1,13 @@
 /* ZimGo service worker: app opens offline (splash, UI, last map area). Bump V to force an update. */
-const V='zimgo-v3',SH=V+'-shell',TL=V+'-tiles',RT=V+'-rt';
+const V='zimgo-v4',SH=V+'-shell',TL=V+'-tiles',RT=V+'-rt';
 const PRE=['./','index.html','manifest.webmanifest','favicon-32.png','apple-touch-icon.png'];
 const CDN=['https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js','https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js','https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js','https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js','https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css','https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap'];
 const TILE=/(^|\.)(mt\d?\.google\.com|google\.com)$/,TILEP=/\/vt|\/maps\/vt/;
 self.addEventListener('install',e=>{e.waitUntil((async()=>{const c=await caches.open(SH);await Promise.all([...PRE.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})),...CDN.map(u=>fetch(new Request(u,{mode:'no-cors'})).then(r=>c.put(u,r)).catch(()=>{}))]);self.skipWaiting()})())});
 self.addEventListener('activate',e=>{e.waitUntil((async()=>{for(const k of await caches.keys())if(!k.startsWith(V))await caches.delete(k);await self.clients.claim()})())});
-async function trim(n,max){const c=await caches.open(n),k=await c.keys();if(k.length>max)for(const r of k.slice(0,k.length-max+100))await c.delete(r)}
+let _tw=0;async function trim(n,max){const c=await caches.open(n),k=await c.keys();if(k.length>max)for(const r of k.slice(0,k.length-max+100))await c.delete(r)}
 self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);
  if(r.mode==='navigate'){e.respondWith((async()=>{try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),3500),n=await fetch(r,{signal:ctl.signal});clearTimeout(t);const c=await caches.open(SH);c.put('index.html',n.clone());return n}catch(x){return(await caches.match('index.html'))||(await caches.match('./'))||Response.error()}})());return}
- if((TILE.test(u.hostname)&&TILEP.test(u.pathname))||/arcgisonline\.com|tiles\.openfreemap\.org/.test(u.hostname)){e.respondWith((async()=>{const c=await caches.open(TL),h=await c.match(r),f=fetch(r).then(n=>{if(n&&(n.ok||n.type==='opaque'))c.put(r,n.clone()).then(()=>trim(TL,1200));return n}).catch(()=>h);return h||f})());return}
+ if((TILE.test(u.hostname)&&TILEP.test(u.pathname))||/arcgisonline\.com|tiles\.openfreemap\.org/.test(u.hostname)){e.respondWith((async()=>{const c=await caches.open(TL),h=await c.match(r);if(h)return h;try{const n=await fetch(r);if(n&&(n.ok||n.type==='opaque')){c.put(r,n.clone());if(++_tw%80===0)trim(TL,1200)}return n}catch(x){return Response.error()}})());return}
  if(u.origin===location.origin||/gstatic\.com|cdn\.jsdelivr\.net|fonts\.googleapis\.com/.test(u.hostname)){e.respondWith((async()=>{const h=await caches.match(r);if(h){fetch(r).then(async n=>{if(n&&(n.ok||n.type==='opaque'))(await caches.open(RT)).put(r,n)}).catch(()=>{});return h}try{const n=await fetch(r);if(n&&(n.ok||n.type==='opaque'))(await caches.open(RT)).put(r,n.clone());return n}catch(x){return Response.error()}})())}
 });
