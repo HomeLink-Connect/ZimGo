@@ -1,5 +1,5 @@
 /* ZimGo service worker: app opens offline (splash, UI, last map area). Bump V to force an update. */
-const V='zimgo-v4',SH=V+'-shell',TL=V+'-tiles',RT=V+'-rt';
+const V='zimgo-v7',SH=V+'-shell',TL=V+'-tiles',RT=V+'-rt';
 const PRE=['./','index.html','manifest.webmanifest','favicon-32.png','apple-touch-icon.png'];
 const CDN=['https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js','https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js','https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js','https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js','https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css','https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap'];
 const TILE=/(^|\.)(mt\d?\.google\.com|google\.com)$/,TILEP=/\/vt|\/maps\/vt/;
