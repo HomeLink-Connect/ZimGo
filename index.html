@@ -1303,10 +1303,12 @@ function pgSettings(){
  </div>
  <div class="sec">Safety &amp; privacy</div><div class="lg">
  ${row('shield','Safety center','Emergency numbers and trip safety',"pgOpen(pgSafety)")}
+${row('heart','Family &amp; night safety','Alert family on late rides',"pgOpen(pgFamily)")}
  ${row('lock','Privacy &amp; data','Download or delete your data',"pgOpen(pgPrivacy)")}
  </div>
  <div class="sec">Support</div><div class="lg">
  ${row('help','Help &amp; support','FAQs and contact',"pgOpen(pgHelp)")}
+${row('info','ZimGo in action','Watch how a ride works',"zgDemo()")}
  ${standalone()?'':row('install','Install app','Add '+APP.name+' to your home screen',"installApp()")}
  ${row('info','About','Version '+APP.version,"pgOpen(pgAbout)")}
  </div>
@@ -1375,7 +1377,8 @@ function pgSafety(){
  pgSet('Safety center',`<div class="note dng">${ic('siren',20)}<span>In an emergency, call the emergency services first.</span></div>
  <div class="em"><a href="tel:995">${ic('siren',22)}<b>Police</b><span>995</span></a><a href="tel:994">${ic('heart',22)}<b>Ambulance</b><span>994</span></a><a href="tel:993">${ic('alert',22)}<b>Fire</b><span>993</span></a></div>
  <p class="m">Emergency numbers can change. If a number does not connect, contact your nearest police station.</p>
- <div class="sec">Tips for passengers</div><div class="lg tips">
+ <div class="sec">Family</div><div class="lg">${row('heart','Family &amp; night safety','Alert family on late rides',"pgOpen(pgFamily)")}</div>
+  <div class="sec">Tips for passengers</div><div class="lg tips">
  ${['Check the driver\'s photo, name, vehicle and number plate match the app before you get in.','Share your trip with a friend using the Share trip button during a ride.','Sit in the back seat and wear your seat belt.','Never pay more than the fare agreed in the app.','Report anything that made you feel unsafe in Help &amp; support.'].map(t=>`<div class="tp">${ic('check',16)}<span>${t}</span></div>`).join('')}</div>
  <div class="sec">Tips for drivers</div><div class="lg tips">
  ${['Only carry the passenger shown in the app and no more than your vehicle\'s legal limit.','Confirm the passenger\'s name and photo before starting the trip.','Keep your licence, registration and insurance valid and with you.','Do not drive tired, or after alcohol or drugs.'].map(t=>`<div class="tp">${ic('check',16)}<span>${t}</span></div>`).join('')}</div>`)}
@@ -2885,6 +2888,10 @@ Flooded road|Mugwagwa une mvura|Umgwaqo ogcwele amanzi
 Animals on the road|Mhuka mumugwagwa|Izilwane emgwaqweni
 Still there|Zvichiripo|Kusekhona
 It is gone|Zvaenda|Kuhambile
+Welcome to ZimGo|Mauya kuZimGo|Wamukelekile ku-ZimGo
+Sign in or create an account to ride.|Pinda kana kuvhura account kuti ufambe.|Ngena noma uvule i-akhawunti ukuze uhambe.
+Family & night safety|Kuchengeteka kwemhuri usiku|Ukuphepha komndeni ebusuku
+ZimGo in action|ZimGo ichishanda|I-ZimGo isebenza
 Create account|Vhura account|Vula i-akhawunti
 Have an account?|Une account here?|Unayo i-akhawunti?
 Made in Zimbabwe 🇿🇼 · Safe, fair rides|Yakagadzirwa muZimbabwe 🇿🇼 · Zvirwendo zvakachengeteka, zvakarurama|Yenziwe eZimbabwe 🇿🇼 · Uhambo oluphephile, olufanele`.split('\n').forEach(l=>{const a=l.split('|');if(a.length===3)m[a[0]]=[a[1],a[2]]});return m})();
@@ -2932,10 +2939,10 @@ document.head.insertAdjacentHTML('beforeend','<style>#auth{justify-content:flex-
 /* ============ "FINDING DRIVERS" SCENE: the car arrives, the passenger opens the door, gets in, closes it and they drive off ============ */
 (function(){
  if(window.__zgWait)return;window.__zgWait=1;
- document.head.insertAdjacentHTML('beforeend','<style>#zgwait{position:fixed;left:12px;right:12px;top:calc(92px + env(safe-area-inset-top,0px));height:200px;z-index:440;border-radius:24px;overflow:hidden;display:none;box-shadow:0 14px 36px rgba(0,0,0,.35);background:linear-gradient(180deg,#071a44 0%,#0d4ab3 55%,#f08a3c 94%);border:1px solid rgba(255,255,255,.18)}#zgwait.on{display:block}#zgwait .sk{position:absolute;left:0;right:0;bottom:19%;height:46%;width:100%}#zgwait .rd{position:absolute;left:0;right:0;bottom:0;height:19%;background:linear-gradient(#222d52,#0a1128);border-top:2px solid #3a4a7a}#zgwait .dh{position:absolute;left:0;right:0;bottom:5.5%;height:3px;background:repeating-linear-gradient(90deg,#ffe27a 0 26px,transparent 26px 58px)}#zgwait canvas{position:absolute;inset:0;width:100%;height:100%}#zgwait .tg{position:absolute;left:14px;top:11px;z-index:2;color:#fff;font:800 12px Inter,sans-serif;letter-spacing:.3px;display:flex;align-items:center;gap:8px}#zgwait .tg i{width:8px;height:8px;border-radius:50%;background:#35d07f;box-shadow:0 0 0 0 rgba(53,208,127,.7);animation:zgWp 1.4s infinite}@keyframes zgWp{70%{box-shadow:0 0 0 9px rgba(53,208,127,0)}100%{box-shadow:0 0 0 0 rgba(53,208,127,0)}}</style>');
+ document.head.insertAdjacentHTML('beforeend','<style>#zgwait{position:fixed;left:12px;right:12px;top:calc(92px + env(safe-area-inset-top,0px));height:200px;z-index:440;border-radius:24px;overflow:hidden;display:none;box-shadow:0 14px 36px rgba(0,0,0,.35);background:linear-gradient(180deg,#071a44 0%,#0d4ab3 55%,#f08a3c 94%);border:1px solid rgba(255,255,255,.18)}#zgwait.on{display:block}#zgwait .sk{position:absolute;left:0;right:0;bottom:19%;height:46%;width:100%}#zgwait .rd{position:absolute;left:0;right:0;bottom:0;height:19%;background:linear-gradient(#222d52,#0a1128);border-top:2px solid #3a4a7a}#zgwait .dh{position:absolute;left:0;right:0;bottom:5.5%;height:3px;background:repeating-linear-gradient(90deg,#ffe27a 0 26px,transparent 26px 58px)}#zgwait canvas{position:absolute;inset:0;width:100%;height:100%}#zgwait.demo{top:50%!important;left:14px;right:14px;height:min(62vh,340px)!important;transform:translateY(-50%);z-index:100001!important;box-shadow:0 0 0 100vmax rgba(4,10,30,.74),0 20px 60px rgba(0,0,0,.5)}#zgwait .cl{position:absolute;right:10px;top:8px;z-index:3;width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:17px}#zgwait .ld{position:absolute;left:0;right:0;top:42%;z-index:2;text-align:center;color:#fff;font:600 13px Inter,sans-serif;padding:0 20px}#zgwait .tg{position:absolute;left:14px;top:11px;z-index:2;color:#fff;font:800 12px Inter,sans-serif;letter-spacing:.3px;display:flex;align-items:center;gap:8px}#zgwait .tg i{width:8px;height:8px;border-radius:50%;background:#35d07f;box-shadow:0 0 0 0 rgba(53,208,127,.7);animation:zgWp 1.4s infinite}@keyframes zgWp{70%{box-shadow:0 0 0 9px rgba(53,208,127,0)}100%{box-shadow:0 0 0 0 rgba(53,208,127,0)}}</style>');
  let r=7,sk='';for(let x=0,i=0;x<400;i++){const w=14+(r=(r*16807)%2147483647)/2147483647*22,h=14+((r=(r*16807)%2147483647)/2147483647)*52;sk+='<rect x="'+x.toFixed(1)+'" y="'+(70-h).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" fill="#0a2a66" opacity=".75"/>';for(let wy=70-h+5;wy<66;wy+=7)for(let wx=x+3;wx<x+w-4;wx+=6)if(((r=(r*16807)%2147483647)/2147483647)<.28)sk+='<rect x="'+wx.toFixed(1)+'" y="'+wy.toFixed(1)+'" width="2.4" height="3" fill="#ffd98a" opacity=".8"/>';x+=w+1}
- const P=document.createElement('div');P.id='zgwait';P.setAttribute('aria-hidden','true');P.innerHTML='<svg class="sk" viewBox="0 0 400 70" preserveAspectRatio="none">'+sk+'</svg><div class="rd"><div class="dh"></div></div><div class="tg"><i></i><span>Finding drivers…</span></div>';document.body.appendChild(P);
- const want=function(){return typeof ride!=='undefined'&&ride&&ride.status==='open'&&typeof me!=='undefined'&&me&&me.role!=='driver'};
+ const P=document.createElement('div');P.id='zgwait';P.setAttribute('aria-hidden','true');P.innerHTML='<svg class="sk" viewBox="0 0 400 70" preserveAspectRatio="none">'+sk+'</svg><div class="rd"><div class="dh"></div></div><div class="tg"><i></i><span>ZimGo in action</span></div><button class="cl" aria-label="Close" onclick="zgDemoClose()">✕</button><div class="ld">Loading the animation…</div>';document.body.appendChild(P);
+ const want=function(){return !!window.ZG_DEMO};
  let loading=0,live=0,go3=null;
  function lib(src,cb){const s=document.createElement('script');s.src=src;s.onload=cb;s.onerror=function(){};document.head.appendChild(s)}
  function load(){if(loading)return;loading=1;if((navigator.connection&&navigator.connection.saveData)||(navigator.deviceMemory&&navigator.deviceMemory<2))return;let need=3;const one=function(){if(--need===0)boot()};
@@ -2943,9 +2950,8 @@ document.head.insertAdjacentHTML('beforeend','<style>#auth{justify-content:flex-
  function dec(b){const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer}
  function boot(){try{if(!window.THREE||!THREE.GLTFLoader)return;const L=new THREE.GLTFLoader(),res={};const fin=function(k,g){res[k]=g;if(res.car&&res.man)build(res.car,res.man)};
   L.parse(dec(window.ZG_CAR_B64),'',function(g){fin('car',g)},function(){});L.parse(dec(window.ZG_MAN_B64),'',function(g){fin('man',g)},function(){})}catch(e){console.warn('zg wait',e)}}
- setInterval(function(){const on=want();P.classList.toggle('on',on);if(on)load()},700);
- setTimeout(function(){const c=navigator.connection;if(typeof me!=='undefined'&&me&&me.role!=='driver'&&c&&c.effectiveType==='4g'&&!c.saveData)load()},9000);
- function build(carG,manG){try{
+ setInterval(function(){const on=want();P.classList.toggle('on',on);P.classList.toggle('demo',on);if(on)load()},500);window.zgDemo=function(){window.ZG_DEMO=1;load();setTimeout(function(){const l=P.querySelector('.ld');if(l&&!P.querySelector('canvas'))l.textContent='Could not load the animation. Check your connection and try again.'},20000)};window.zgDemoClose=function(){window.ZG_DEMO=0;P.classList.remove('on','demo')};
+  function build(carG,manG){try{
   const T=THREE,cv=document.createElement('canvas');P.insertBefore(cv,P.querySelector('.tg'));
   const R=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true,powerPreference:'low-power'});R.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R.outputEncoding=T.sRGBEncoding;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.05;
   const S=new T.Scene(),cam=new T.PerspectiveCamera(30,1.9,.1,80);cam.position.set(0,1.2,8.5);cam.lookAt(0,1.55,0);
@@ -2978,7 +2984,7 @@ document.head.insertAdjacentHTML('beforeend','<style>#auth{justify-content:flex-
   function carX(t){if(t<2)return X0+(X1-X0)*ease(t/2);if(t<5.8)return X1;return X1+13*Math.pow(c01((t-5.8)/1.4),2.1)}
   function sizeIt(){const w=P.clientWidth,h=P.clientHeight;if(!w||!h)return;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
   sizeIt();addEventListener('resize',sizeIt);
-  const t0=performance.now();let last=t0,px=X0,ph=0,run=false;
+  const t0=performance.now();let last=t0,px=X0,ph=0,run=false;const ld=P.querySelector('.ld');ld&&ld.remove();
   function frame(now){
    if(!P.classList.contains('on')||document.hidden){run=false;return}
    const dt=Math.min(.06,(now-last)/1000);last=now;const t=((now-t0)/1000)%CY;
@@ -2996,20 +3002,67 @@ document.head.insertAdjacentHTML('beforeend','<style>#auth{justify-content:flex-
    ph+=dt*(2*Math.PI*1.45)*(sw>.3?1:.3);pose(ph,sw,cr,ln,sit);
    mp.position.set(mx,0,mz);mp.rotation.y=ry;mp.visible=ms.visible=vis;ms.position.set(mx,.012,mz);ms.visible=vis&&sit<.5;
    R.render(S,cam);requestAnimationFrame(frame)}
-  go3=function(){if(run)return;run=true;last=performance.now();requestAnimationFrame(frame)};
+  go3=function(){if(run)return;run=true;sizeIt();last=performance.now();requestAnimationFrame(frame)};
   setInterval(function(){if(P.classList.contains('on')&&!run)go3()},500);go3()}catch(e){console.warn('zg wait 3d',e);const c=P.querySelector('canvas');c&&c.remove()}}
 })();
 
-/* ============ LOGIN: light glass theme, no map behind ============ */
-document.head.insertAdjacentHTML('beforeend','<style id="zgGlass">#auth{background-color:#f3f7ff!important;background-image:radial-gradient(60% 40% at 10% 6%,rgba(47,123,255,.38),transparent 70%),radial-gradient(55% 40% at 94% 16%,rgba(44,196,224,.36),transparent 70%),radial-gradient(60% 45% at 84% 98%,rgba(255,196,77,.38),transparent 70%),radial-gradient(50% 40% at 4% 92%,rgba(130,99,255,.24),transparent 70%)!important;color:#0b1b3a!important}'
-+'#auth .acard{background:rgba(255,255,255,.55)!important;-webkit-backdrop-filter:blur(26px) saturate(1.6);backdrop-filter:blur(26px) saturate(1.6);border:1px solid rgba(255,255,255,.9);box-shadow:0 22px 50px rgba(30,70,150,.18),inset 0 1px 0 rgba(255,255,255,.95)}'
-+'#auth .atabs{background:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.85)}#auth .atabs button.on{background:#fff!important}'
-+'#auth .acard input{background:rgba(255,255,255,.72)!important;border:1.5px solid rgba(255,255,255,.95)!important;box-shadow:inset 0 1px 3px rgba(30,70,150,.08)}#auth .acard input:focus{background:#fff!important;border-color:#2f7bff!important;box-shadow:0 0 0 4px rgba(47,123,255,.16)}'
-+'#auth .acard .btn.d{background:linear-gradient(135deg,#2f7bff,#1451c7)!important;color:#fff!important}#auth .acard .gbtn{background:rgba(255,255,255,.85)!important;border:1.5px solid rgba(255,255,255,.95)!important}'
-+'#auth .logo{color:#0b1b3a!important}#auth .logo span{background:#1a73d9!important;color:#fff!important}#auth #atag{color:#3b4b70!important;opacity:1!important}'
-+'#auth .trust span{background:rgba(255,255,255,.55)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.9);color:#1c2c52!important;box-shadow:0 6px 18px rgba(30,70,150,.1)}'
-+'#auth .legal,#auth .legal a,#auth .afoot{color:#3b4b70!important}#auth .acard .or{color:#51618a}html.zg-auth #map{visibility:hidden}</style>');
-(function(){const a=document.getElementById('auth');if(!a)return;const f=function(){document.documentElement.classList.toggle('zg-auth',!a.hidden&&getComputedStyle(a).display!=='none')};f();new MutationObserver(f).observe(a,{attributes:true,attributeFilter:['hidden','style','class']})})();
+/* ============ LOGIN v3: blue hero + white sheet, no map behind ============ */
+document.head.insertAdjacentHTML('beforeend','<style id="zgLogin3">html.zg-auth #map{visibility:hidden}'
++'#auth{display:flex!important;flex-direction:column!important;justify-content:flex-start!important;align-items:stretch!important;padding:0!important;gap:0!important;background:linear-gradient(165deg,#082a6b 0%,#0f57c8 54%,#2a8cf0 100%)!important;background-image:linear-gradient(165deg,#082a6b 0%,#0f57c8 54%,#2a8cf0 100%)!important;color:#fff}'
++'#auth::before{content:"";position:absolute;right:-110px;top:-120px;width:340px;height:340px;border-radius:50%;border:48px solid rgba(255,255,255,.06);pointer-events:none}'
++'#auth::after{content:"";position:absolute;left:-90px;top:240px;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,0,.2),transparent 70%);pointer-events:none}'
++'#auth>.amk,#auth>.logo,#auth>#atag,#auth>.trust{position:relative;z-index:1;width:auto!important;max-width:none!important;margin-left:24px!important;margin-right:24px!important;text-align:left!important;align-self:flex-start}'
++'#auth>.amk{width:58px!important;margin-top:calc(env(safe-area-inset-top,0px) + 52px)!important;margin-bottom:0!important}#auth>.amk svg{width:100%;height:auto;display:block}'
++'#auth>.logo{font-size:46px!important;margin-top:10px!important;margin-bottom:4px!important;color:#fff!important}#auth>.logo span{background:#fff!important;color:#1259c9!important}'
++'#auth>#atag{font-size:17px!important;line-height:1.35;color:rgba(255,255,255,.92)!important;opacity:1!important;margin-top:4px!important;margin-bottom:16px!important}'
++'#auth>.trust{display:flex!important;flex-wrap:wrap;gap:5px!important;margin-top:0!important;margin-bottom:22px!important}'
++'#auth>.trust span{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px!important;padding:6px 9px!important;border-radius:99px!important;background:rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.28)!important;color:#fff!important;font-size:11.5px!important;font-weight:700;box-shadow:none!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}#auth>.trust span::before{font-size:14px!important}'
++'#auth>.asheet{position:relative;z-index:1;flex:1 0 auto;width:100%!important;max-width:none!important;background:#fff;border-radius:30px 30px 0 0;padding:24px 22px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -14px 40px rgba(4,16,50,.35);display:flex;flex-direction:column;gap:14px;color:#0b1b3a}'
++'.asheet .ash b{display:block;font-size:23px;font-weight:800;letter-spacing:-.2px}.asheet .ash span{display:block;margin-top:3px;font-size:14px;color:#5a6a8c;font-weight:500}'
++'.asheet .acard{background:none!important;box-shadow:none!important;border:0!important;padding:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;gap:12px!important;color:#0b1b3a!important}'
++'.asheet .atabs{background:#eef2f9!important;border:0!important}.asheet .atabs button.on{background:#fff!important;color:#0f57c8!important;box-shadow:0 2px 8px rgba(15,87,200,.18)}'
++'.asheet .acard input{background:#f3f6fc!important;border:1.5px solid #e3e9f5!important;color:#0b1b3a!important;box-shadow:none!important}.asheet .acard input:focus{background:#fff!important;border-color:#2f7bff!important;box-shadow:0 0 0 4px rgba(47,123,255,.14)!important}'
++'.asheet .acard .af{color:#7b8ab0!important}.asheet .acard .btn.d{background:linear-gradient(135deg,#2f7bff,#1451c7)!important;color:#fff!important;box-shadow:0 10px 24px rgba(37,99,235,.38)!important}'
++'.asheet .acard .gbtn{background:#fff!important;border:1.5px solid #dfe5f1!important;color:#0b1b3a!important;box-shadow:none!important}.asheet .acard .or{color:#7b8ab0!important}.asheet .acard .lnk,.asheet .acard #fg{color:#1259c9!important}'
++'.asheet .legal,.asheet .legal a,.asheet .afoot{color:#6b7aa0!important;opacity:1!important}.asheet .legal{margin-top:auto!important;padding-top:6px;text-align:center}.asheet .afoot{margin:0!important;text-align:center}@media (max-height:720px){#auth>.amk{margin-top:calc(env(safe-area-inset-top,0px) + 30px)!important;width:46px!important}#auth>.logo{font-size:38px!important}#auth>#atag{font-size:15px!important;margin-bottom:12px!important}#auth>.trust{margin-bottom:16px!important}.asheet{padding-top:18px!important}}</style>');
+(function(){const a=document.getElementById('auth');if(!a)return;const f=function(){document.documentElement.classList.toggle('zg-auth',!a.hidden&&getComputedStyle(a).display!=='none')};f();new MutationObserver(f).observe(a,{attributes:true,attributeFilter:['hidden','style','class']});
+ if(a.dataset.v3)return;a.dataset.v3=1;const card=a.querySelector('.acard');if(!card)return;const tr=a.querySelector('.trust'),lg=a.querySelector('.legal'),ft=a.querySelector('.afoot');
+ const sh=document.createElement('div');sh.className='asheet';a.insertBefore(sh,card);sh.innerHTML='<div class="ash"><b>Welcome to ZimGo</b><span>Sign in or create an account to ride.</span></div>';sh.appendChild(card);lg&&sh.appendChild(lg);ft&&sh.appendChild(ft);if(tr)a.insertBefore(tr,sh)})();
+
+/* ============ FAMILY NIGHT SAFETY: tell your family about night rides (10 PM to 5 AM, Zimbabwe time) ============ */
+(function(){
+ document.head.insertAdjacentHTML('beforeend','<style>#zgfam{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:100000;display:none;background:#fff;color:#0b1b3a;border-radius:20px;padding:14px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.45);border-left:6px solid #e5334b;font-family:Inter,sans-serif}#zgfam.on{display:block}#zgfam b{display:block;font-size:15px;margin-bottom:3px}#zgfam p{margin:0 0 10px;font-size:13px;color:#51618a;line-height:1.4}#zgfam .r{display:flex;align-items:center;gap:8px;margin-top:8px}#zgfam .n{flex:1;font-weight:800;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#zgfam button{border:0;border-radius:11px;padding:10px 12px;font:800 13px Inter,sans-serif}#zgfam .w{background:#25d366;color:#fff}#zgfam .m{background:#2f7bff;color:#fff}#zgfam .x{background:#eef2f9;color:#51618a;width:100%;margin-top:10px}#zgfam .ok{opacity:.55}.fam-in .f input{font-size:16px}</style>');
+ document.body.insertAdjacentHTML('beforeend','<div id="zgfam" role="alert"></div>');
+ const K='zg_fam',B=document.getElementById('zgfam');
+ window.famGet=function(){let v=null;try{v=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}if(!v&&typeof me!=='undefined'&&me&&Array.isArray(me.safetyContacts))v={on:me.nightShare!==false,c:me.safetyContacts};return v||{on:true,c:[]}};
+ function save(v){try{localStorage.setItem(K,JSON.stringify(v))}catch(e){}if(typeof me!=='undefined'&&me&&me.uid)db.collection('users').doc(me.uid).set({safetyContacts:v.c,nightShare:!!v.on},{merge:true}).catch(function(){})}
+ const norm=function(p){let d=String(p||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.startsWith('0'))d='263'+d.slice(1);else if(d.length===9&&/^7/.test(d))d='263'+d;return d};
+ const night=function(){const h=+new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Harare',hour:'numeric',hourCycle:'h23'}).format(new Date());return h>=22||h<5};
+ const ctime=function(){return new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Harare',weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date())};
+ function msg(r){const l=r.dLoc||(typeof here!=='undefined'&&here)||null,g=l?'https://www.google.com/maps?q='+l.lat+','+l.lng:'';
+  return '🚨 ZimGo night ride\n'+(r.paxName||'Your family member')+' has just started a ride.\n🕙 '+ctime()+' (Zimbabwe time)\n\nDRIVER\n👤 '+(r.driverName||'')+(r.driverRating?' · ⭐ '+(+r.driverRating).toFixed(1):'')+(r.driverVerified?' · ZimGo verified':'')+'\n📞 '+(r.driverPhone||'not shown')+'\n🚗 '+[r.driverCar,r.driverPlate].filter(Boolean).join(' · ')+'\n\nTRIP\nFrom: '+((r.pickup&&r.pickup.name)||'')+'\nTo: '+((r.drop&&r.drop.name)||'')+'\nFare: $'+(+r.price||0).toFixed(2)+(r.km?' · '+r.km+' km':'')+'\nRide ref: '+String(r.id||'').slice(0,8)+(g?'\n\n📍 Live location: '+g:'')+'\n\nIf you cannot reach '+String(r.paxName||'them').split(' ')[0]+', call the police on 995.'}
+ const wa=function(p,t){window.open('https://wa.me/'+norm(p)+'?text='+encodeURIComponent(t),'_blank')},sms=function(p,t){location.href='sms:+'+norm(p)+(/iPhone|iPad/i.test(navigator.userAgent)?'&':'?')+'body='+encodeURIComponent(t)};
+ let cur=null;
+ window.famSend=function(i,how){if(!cur)return;const c=cur.c[i];how==='wa'?wa(c.p,cur.t):sms(c.p,cur.t);cur.d[i]=1;show()};
+ window.famClose=function(){B.classList.remove('on')};
+ function show(){if(!cur)return;let h='<b>Night ride safety</b><p>It is late. Tell your family about this ride. The driver, car, plate and live location are included.</p>';
+  cur.c.forEach(function(c,i){h+='<div class="r'+(cur.d[i]?' ok':'')+'"><span class="n">'+(cur.d[i]?'✓ ':'')+String(c.n||c.p).replace(/</g,'&lt;')+'</span><button class="w" onclick="famSend('+i+',\'wa\')">WhatsApp</button><button class="m" onclick="famSend('+i+',\'sms\')">SMS</button></div>'});
+  h+='<button class="x" onclick="famClose()">Close</button>';B.innerHTML=h;B.classList.add('on')}
+ function noContacts(){B.innerHTML='<b>Night ride safety</b><p>Add a family contact so they get the driver details on late rides.</p><button class="m" style="width:100%" onclick="famClose();pgOpen(pgFamily)">Add family contact</button><button class="x" onclick="famClose()">Not now</button>';B.classList.add('on')}
+ setInterval(function(){try{const r=typeof ride!=='undefined'&&ride;if(!r||typeof me==='undefined'||!me||me.role==='driver'||!['accepted','arrived','ongoing'].includes(r.status))return;
+  const key='zg_famsent_'+r.id+'_'+(r.driver||'');if(localStorage.getItem(key)||!night())return;const f=famGet();if(f.on===false)return;localStorage.setItem(key,'1');
+  if(!f.c.length){noContacts();return}cur={c:f.c,t:msg(r),d:{}};show();if(navigator.vibrate)navigator.vibrate([200,100,200]);try{say('Night ride. Tell your family. Tap WhatsApp or SMS.')}catch(e){}}catch(e){}},3000);
+ /* settings page */
+ window.pgFamily=function(){const f=famGet();
+  pgSet('Family &amp; night safety','<div class="note">'+ic('heart',20)+'<span>On rides between 10 PM and 5 AM (Zimbabwe time), ZimGo asks to send your driver\'s details and live location to these people.</span></div>'
+  +'<div class="sec">Family contacts (up to 3)</div><div class="lg fam-in">'+(f.c.length?f.c.map(function(c,i){return row('phone',String(c.n||'Contact').replace(/</g,'&lt;'),String(c.p).replace(/</g,'&lt;'),'famDel('+i+')','<span style="font-size:18px;color:#e5334b;padding:0 6px">✕</span>',0)}).join(''):'<div class="lr"><div class="lm"><small>No contacts yet.</small></div></div>')+'</div>'
+  +(f.c.length<3?'<div class="fl" style="margin-top:12px"><label>Name</label><div class="f">'+ic('user',20)+'<input id="fmn" placeholder="e.g. Mum" autocomplete="off"></div></div><div class="fl"><label>WhatsApp / phone number</label><div class="f">'+ic('phone',20)+'<input id="fmp" type="tel" placeholder="e.g. 0771 234 567" autocomplete="off"></div></div><button class="btn" style="margin-top:8px" onclick="famAdd()">Add contact</button>':'')
+  +'<div class="sec">Night alerts</div><div class="lg">'+row('shield','Alert family on night rides','10 PM to 5 AM, Zimbabwe time','famTog()','<button class="sw '+(f.on!==false?'on':'')+'" id="famsw"></button>')+'</div>'
+  +'<p class="m">Your phone opens WhatsApp or SMS with the message ready. Tap Send. The app cannot send messages by itself without a server setup.</p>')};
+ window.famAdd=function(){const n=($('#fmn').value||'').trim(),p=norm($('#fmp').value);if(p.length<10){toast('Enter a valid phone number.');return}const f=famGet();f.c=(f.c||[]).concat([{n:n||'Family',p:p}]).slice(0,3);save(f);pgRender()};
+ window.famDel=function(i){const f=famGet();f.c.splice(i,1);save(f);pgRender()};
+ window.famTog=function(){const f=famGet();f.on=!(f.on!==false);save(f);const s=document.getElementById('famsw');s&&s.classList.toggle('on',f.on)};
+})();
 
 /* ============ small map extras ============ */
 </script>
