@@ -2997,6 +2997,17 @@ document.head.insertAdjacentHTML('beforeend','<style>#auth{justify-content:flex-
   setInterval(function(){if(P.classList.contains('on')&&!run)go3()},500);go3()}catch(e){console.warn('zg wait 3d',e);const c=P.querySelector('canvas');c&&c.remove()}}
 })();
 
+/* ============ LOGIN: light glass theme, no map behind ============ */
+document.head.insertAdjacentHTML('beforeend','<style id="zgGlass">#auth{background-color:#f3f7ff!important;background-image:radial-gradient(60% 40% at 10% 6%,rgba(47,123,255,.38),transparent 70%),radial-gradient(55% 40% at 94% 16%,rgba(44,196,224,.36),transparent 70%),radial-gradient(60% 45% at 84% 98%,rgba(255,196,77,.38),transparent 70%),radial-gradient(50% 40% at 4% 92%,rgba(130,99,255,.24),transparent 70%)!important;color:#0b1b3a!important}'
++'#auth .acard{background:rgba(255,255,255,.55)!important;-webkit-backdrop-filter:blur(26px) saturate(1.6);backdrop-filter:blur(26px) saturate(1.6);border:1px solid rgba(255,255,255,.9);box-shadow:0 22px 50px rgba(30,70,150,.18),inset 0 1px 0 rgba(255,255,255,.95)}'
++'#auth .atabs{background:rgba(255,255,255,.55)!important;border:1px solid rgba(255,255,255,.85)}#auth .atabs button.on{background:#fff!important}'
++'#auth .acard input{background:rgba(255,255,255,.72)!important;border:1.5px solid rgba(255,255,255,.95)!important;box-shadow:inset 0 1px 3px rgba(30,70,150,.08)}#auth .acard input:focus{background:#fff!important;border-color:#2f7bff!important;box-shadow:0 0 0 4px rgba(47,123,255,.16)}'
++'#auth .acard .btn.d{background:linear-gradient(135deg,#2f7bff,#1451c7)!important;color:#fff!important}#auth .acard .gbtn{background:rgba(255,255,255,.85)!important;border:1.5px solid rgba(255,255,255,.95)!important}'
++'#auth .logo{color:#0b1b3a!important}#auth .logo span{background:#1a73d9!important;color:#fff!important}#auth #atag{color:#3b4b70!important;opacity:1!important}'
++'#auth .trust span{background:rgba(255,255,255,.55)!important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.9);color:#1c2c52!important;box-shadow:0 6px 18px rgba(30,70,150,.1)}'
++'#auth .legal,#auth .legal a,#auth .afoot{color:#3b4b70!important}#auth .acard .or{color:#51618a}html.zg-auth #map{visibility:hidden}</style>');
+(function(){const a=document.getElementById('auth');if(!a)return;const f=function(){document.documentElement.classList.toggle('zg-auth',!a.hidden&&getComputedStyle(a).display!=='none')};f();new MutationObserver(f).observe(a,{attributes:true,attributeFilter:['hidden','style','class']})})();
+
 /* ============ small map extras ============ */
 </script>
 </body></html>
