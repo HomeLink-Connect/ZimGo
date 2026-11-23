@@ -89,7 +89,7 @@ window.zgShim=function(){var ML=window.maplibregl,lines=[],pid=0;
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>ZimGo</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet"></noscript>
 <!-- FIRESTORE RULES: paste in Firebase console > Firestore Database > Rules > Publish
 rules_version='2';
 service cloud.firestore{
@@ -650,6 +650,9 @@ html{background:var(--bg0,#071022)}body{overscroll-behavior:none;-webkit-tap-hig
  <div class="legal"><a onclick="showLegal('terms')">Terms</a> · <a onclick="showLegal('privacy')">Privacy Policy</a></div>
 </div>
 
+<script>/* slow-network watchdog: if the app has not started after 14 s, say so and offer a retry */
+(function(){setTimeout(function(){if(window._zgAuth)return;var d=document.createElement('div');d.id='zgslow';d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:100000;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));background:#0b1730;color:#fff;font:600 14px Inter,Arial,sans-serif;text-align:center;box-shadow:0 -10px 30px rgba(0,0,0,.4)';d.innerHTML='<div style="margin-bottom:10px">Your connection looks slow, or part of it is being blocked. Check your data bundle or try Wi-Fi.</div><button style="background:#2f7bff;color:#fff;border:0;border-radius:12px;padding:12px 22px;font:800 15px Inter,Arial,sans-serif" onclick="location.reload()">Try again</button>';document.body.appendChild(d);var iv=setInterval(function(){if(window._zgAuth){d.remove();clearInterval(iv)}},500)},14000)})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
