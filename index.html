@@ -672,7 +672,8 @@ firebase.initializeApp({
   appId: "1:594530032327:web:2073fe4286a9ff6728bce2"
 });
 const auth=firebase.auth(),db=firebase.firestore(),TS=()=>firebase.firestore.FieldValue.serverTimestamp();
-try{db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
+try{db.settings({experimentalAutoDetectLongPolling:true,merge:true})}catch(e){}
+try{if(window.indexedDB&&!/FBAN|FBAV|Instagram|; wv\)|Line\//.test(navigator.userAgent))db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
 const $=s=>document.querySelector(s),sh=h=>{$('#sheet').innerHTML=h?`<div class="sc">${h}</div>`:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const money=n=>'$'+(+n).toFixed(2);
@@ -851,7 +852,7 @@ function showComplete(u){mode='complete';$('#auth').hidden=false;['#menu','#top'
  $('#go').textContent='Continue';$('#atag').textContent='Almost done. Tell us a bit about you.';$('#err').textContent='';
  if(!$('#nm').value)$('#nm').value=u.displayName||'';$('#dv').hidden=$('#role').value!=='driver'}
 const eye=()=>{const p=$('#pw');p.type=p.type==='password'?'text':'password'};
-const AERR={'auth/unauthorized-domain':'Add this website in Firebase > Authentication > Settings > Authorized domains.','auth/operation-not-allowed':'Turn on Google in Firebase > Authentication > Sign-in method.','auth/network-request-failed':'No internet connection.','auth/account-exists-with-different-credential':'That email is registered with a password. Sign in with email instead.'};
+const AERR={'auth/unauthorized-domain':'Add this website in Firebase > Authentication > Settings > Authorized domains.','auth/operation-not-allowed':'Turn on Google in Firebase > Authentication > Sign-in method.','auth/network-request-failed':'Network problem. Check your data or Wi-Fi and try again.','auth/invalid-credential':'Wrong email or password.','auth/wrong-password':'Wrong email or password.','auth/user-not-found':'Wrong email or password.','auth/too-many-requests':'Too many attempts. Wait a few minutes and try again.','auth/email-already-in-use':'That email is already registered. Tap Sign in.','auth/weak-password':'Password must be at least 6 characters.','auth/invalid-email':'Enter a valid email address.','auth/account-exists-with-different-credential':'That email is registered with a password. Sign in with email instead.'};
 async function gsign(){
  $('#err').textContent='';const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
  try{await auth.signInWithPopup(p)}catch(e){
@@ -877,11 +878,17 @@ auth.onAuthStateChanged(async u=>{
  if(sg){window._zgAuth=1;return}
  try{await Promise.race([mapReady,new Promise(r=>setTimeout(r,2500))]);
  if(!u){try{localStorage.removeItem('zg_me')}catch(e){}clean();authReset();me=null;$('#auth').hidden=false;['#menu','#top','#pin','#loc'].forEach(s=>$(s).hidden=true);sh('');try{clrMap()}catch(e){}return}
- let d=null,miss=false;try{const s=await db.collection('users').doc(u.uid).get();if(s.exists){d=s.data();try{localStorage.zg_me=JSON.stringify({uid:u.uid,d})}catch(e){}}else miss=true}catch(e){}
- if(!d&&!miss){try{const c=JSON.parse(localStorage.zg_me||'null');if(c&&c.uid===u.uid)d=c.d}catch(e){}}
- if(!d){if(miss)showComplete(u);return}
- me={...d,uid:u.uid};boot()}finally{window._zgAuth=1}
+ await bootUser(u,0)}finally{window._zgAuth=1}
 });
+async function bootUser(u,n){
+ const TO=(pr,ms)=>Promise.race([pr,new Promise((_,r)=>setTimeout(()=>r(Error('timeout')),ms))]);
+ let d=null,miss=false;
+ try{const s=await TO(db.collection('users').doc(u.uid).get(),9000);if(s.exists){d=s.data();try{localStorage.zg_me=JSON.stringify({uid:u.uid,d})}catch(e){}}else miss=true}catch(e){}
+ if(!d&&!miss){try{const c=JSON.parse(localStorage.zg_me||'null');if(c&&c.uid===u.uid)d=c.d}catch(e){}}
+ if(d){me={...d,uid:u.uid};boot();return}
+ if(miss){showComplete(u);return}
+ $('#auth').hidden=false;$('#err').style.color='';$('#err').textContent='Signed in, but your profile is slow to load. Retrying...';
+ if(n<8)setTimeout(function(){if(auth.currentUser&&auth.currentUser.uid===u.uid&&!me)bootUser(u,n+1)},5000);else $('#err').textContent='Could not load your profile. Check your data or Wi-Fi, then reopen ZimGo.'}
 function clean(){U.forEach(f=>f());U=[];offU&&offU();offU=null;openU&&openU();openU=null;if(W){navigator.geolocation.clearWatch(W);W=null}ride=null;online=false;drop=null;rt=null;stage='idle';hadRide=false;prevSt=null;SENT={};DECL={};$('#md').hidden=true;$('#srch').hidden=true}
 function boot(){
  clean();authReset();$('#auth').hidden=true;$('#menu').hidden=false;{const mt=zgTheme(me.theme);if(mt&&THEMES[mt]&&mt!==window._themeSel)applyTheme(mt)}
@@ -3065,6 +3072,14 @@ document.head.insertAdjacentHTML('beforeend','<style id="zgLogin4">html.zg-auth 
  window.famTog=function(){const f=famGet();f.on=!(f.on!==false);save(f);const s=document.getElementById('famsw');s&&s.classList.toggle('on',f.on)};
 })();
 
+/* ============ SIGN-IN BUTTON: shows progress and never hangs silently ============ */
+{const _g=go;go=async function(){const b=$('#go');if(!b||b.dataset.busy)return;const txt=b.textContent;b.dataset.busy=1;b.disabled=true;b.textContent=mode==='in'?'Signing in…':(mode==='complete'?'Saving…':'Creating account…');
+ const reset=function(){delete b.dataset.busy;b.disabled=false;b.textContent=txt},slow=setTimeout(function(){const e=$('#err');if(!e.textContent){e.style.color='';e.textContent='Still working. Your connection looks slow...'}},10000);
+ try{await _g()}catch(e){}
+ const t0=Date.now(),iv=setInterval(function(){const a=$('#auth'),er=$('#err').textContent;
+  if(a.hidden){clearInterval(iv);clearTimeout(slow);reset();return}
+  if(er&&!/^Still working/.test(er)){clearInterval(iv);clearTimeout(slow);reset();return}
+  if(Date.now()-t0>45000){clearInterval(iv);clearTimeout(slow);$('#err').textContent='This is taking too long. Check your data or Wi-Fi and try again.';reset()}},300)}}
 /* ============ small map extras ============ */
 </script>
 </body></html>
